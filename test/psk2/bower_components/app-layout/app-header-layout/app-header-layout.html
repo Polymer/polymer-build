@@ -26,7 +26,7 @@ Using the document scroll:
     </app-toolbar>
   </app-header>
   <div>
-    <!\-\- content goes here \-\->
+    main content
   </div>
 </app-header-layout>
 ```
@@ -41,13 +41,16 @@ Using an own scrolling region:
     </app-toolbar>
   </app-header>
   <div>
-    <!\-\- content goes here \-\->
+    main content
   </div>
 </app-header-layout>
 ```
 
-@demo app-header-layout/demo1.html
-@demo app-header-layout/demo2.html
+@group App Elements
+@element app-header-layout
+@demo app-header-layout/demo/simple.html Simple Demo
+@demo app-header-layout/demo/scrolling-region.html Scrolling Region
+@demo app-header-layout/demo/music.html Music Demo
 -->
 
 <dom-module id="app-header-layout">
@@ -131,6 +134,11 @@ Using an own scrolling region:
         'resetLayout(isAttached, hasScrollingRegion)'
       ],
 
+      /**
+       * A reference to the app-header element.
+       *
+       * @property header
+       */
       get header() {
         return Polymer.dom(this.$.header).getDistributedNodes()[0];
       },

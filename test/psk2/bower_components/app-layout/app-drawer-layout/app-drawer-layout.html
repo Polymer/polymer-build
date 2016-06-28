@@ -24,10 +24,10 @@ By default the drawer is aligned to the start, which is left in LTR layouts:
 ```html
 <app-drawer-layout>
   <app-drawer>
-    <!\-\- drawer content \-\->
+    drawer content
   </app-drawer>
   <div>
-    <!\-\- main content \-\->
+    main content
   </div>
 </app-drawer-layout>
 ```
@@ -37,10 +37,10 @@ Align the drawer at the end:
 ```html
 <app-drawer-layout>
   <app-drawer align="end">
-    <!\-\- drawer content \-\->
+     drawer content
   </app-drawer>
   <div>
-    <!\-\- main content \-\->
+    main content
   </div>
 </app-drawer-layout>
 ```
@@ -50,7 +50,7 @@ With an app-header-layout:
 ```html
 <app-drawer-layout>
   <app-drawer>
-    <!\-\- drawer content \-\->
+    drawer-content
   </app-drawer>
   <app-header-layout>
     <app-header>
@@ -59,9 +59,43 @@ With an app-header-layout:
       </app-toolbar>
     </app-header>
 
-    <!\-\- main content \-\->
+    main content
 
   </app-header-layout>
+</app-drawer-layout>
+```
+
+Add the `drawer-toggle` attribute to elements inside `app-drawer-layout` that toggle the drawer on tap events:
+
+```html
+<app-drawer-layout>
+  <app-drawer>
+    drawer-content
+  </app-drawer>
+  <app-header-layout>
+    <app-header>
+      <app-toolbar>
+        <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
+        <div title>App name</div>
+      </app-toolbar>
+    </app-header>
+
+    main content
+
+  </app-header-layout>
+</app-drawer-layout>
+```
+
+Add the `fullbleed` attribute to app-drawer-layout to make it fit the size of its container:
+
+```html
+<app-drawer-layout fullbleed>
+  <app-drawer>
+     drawer content
+  </app-drawer>
+  <div>
+    main content
+  </div>
 </app-drawer-layout>
 ```
 
@@ -71,7 +105,10 @@ Custom property                          | Description                          
 -----------------------------------------|--------------------------------------|---------
 `--app-drawer-layout-content-transition` | Transition for the content container | none
 
-@demo app-drawer-layout/demo.html
+@group App Elements
+@element app-drawer-layout
+@demo app-drawer-layout/demo/simple-drawer.html Simple Demo
+@demo app-drawer-layout/demo/two-drawers.html Two drawers
 -->
 
 <dom-module id="app-drawer-layout">
@@ -98,13 +135,14 @@ Custom property                          | Description                          
       }
     </style>
 
-    <div id="contentContainer" class$="[[_computeClass(narrow)]]">
+    <div id="contentContainer">
       <content select=":not(app-drawer)"></content>
     </div>
 
     <content id="drawerContent" select="app-drawer"></content>
 
-    <iron-media-query query="[[_computeMediaQuery(forceNarrow, responsiveWidth)]]"
+    <iron-media-query
+        query="[[_computeMediaQuery(forceNarrow, responsiveWidth)]]"
         on-query-matches-changed="_onQueryMatchesChanged"></iron-media-query>
   </template>
 
@@ -118,33 +156,30 @@ Custom property                          | Description                          
 
       properties: {
         /**
-         * Returns true if the panel is in narrow layout. This is useful if you
-         * need to show/hide elements based on the layout.
-         */
-        narrow: {
-          type: Boolean,
-          readOnly: true,
-          notify: true,
-          reflectToAttribute: true,
-          value: false
-        },
-
-        /**
          * If true, ignore `responsiveWidth` setting and force the narrow layout.
          */
         forceNarrow: {
           type: Boolean,
-          value: false,
-          observer: '_responsiveChange'
+          value: false
         },
 
         /**
-         * If the viewport's width is smaller than this value, the panel will change to narrow layout.
-         * In the mode the drawer will be closed.
+         * If the viewport's width is smaller than this value, the panel will change to narrow
+         * layout. In the mode the drawer will be closed.
          */
         responsiveWidth: {
           type: String,
           value: '640px'
+        },
+
+        /**
+         * Returns true if it is in narrow layout. This is useful if you need to show/hide
+         * elements based on the layout.
+         */
+        narrow: {
+          type: Boolean,
+          readOnly: true,
+          notify: true
         }
       },
 
@@ -153,12 +188,12 @@ Custom property                          | Description                          
         'app-drawer-reset-layout': 'resetLayout'
       },
 
-      attached: function() {
-        this.resetLayout();
-      },
+      observers: [
+        'resetLayout(narrow, isAttached)'
+      ],
 
       /**
-       * Gets the drawer element.
+       * A reference to the app-drawer element.
        *
        * @property drawer
        */
@@ -173,48 +208,45 @@ Custom property                          | Description                          
         }
       },
 
-      _responsiveChange: function(narrow) {
-        this._setNarrow(narrow);
-        this.resetLayout();
-      },
-
       resetLayout: function() {
         this.debounce('_resetLayout', function() {
           if (!this.isAttached) {
             return;
           }
-          this.drawer.opened = !this.narrow;
-          this.drawer.persistent = !this.narrow;
+
+          var drawer = this.drawer;
+          var drawerWidth = this.drawer.getWidth();
+          var contentContainer = this.$.contentContainer;
+
           if (this.narrow) {
-            this.$.contentContainer.style.marginLeft = '';
-            this.$.contentContainer.style.marginRight = '';
-          } else if (this.drawer.position == 'right') {
-            this.$.contentContainer.style.marginLeft = '';
-            this.$.contentContainer.style.marginRight = this.drawer.getWidth() + 'px';
+            drawer.opened = drawer.persistent = false;
+            contentContainer.classList.add('narrow');
+
+            contentContainer.style.marginLeft = '';
+            contentContainer.style.marginRight = '';
           } else {
-            this.$.contentContainer.style.marginLeft = this.drawer.getWidth() + 'px';
-            this.$.contentContainer.style.marginRight = '';
+            drawer.opened = drawer.persistent = true;
+            contentContainer.classList.remove('narrow');
+
+            if (drawer.position == 'right') {
+              contentContainer.style.marginLeft = '';
+              contentContainer.style.marginRight = drawerWidth + 'px';
+            } else {
+              contentContainer.style.marginLeft = drawerWidth + 'px';
+              contentContainer.style.marginRight = '';
+            }
           }
+
           this.notifyResize();
         });
       },
 
       _onQueryMatchesChanged: function(event) {
-        this._responsiveChange(event.detail.value);
+        this._setNarrow(event.detail.value);
       },
 
       _computeMediaQuery: function(forceNarrow, responsiveWidth) {
-        return forceNarrow ? '' : '(max-width: ' + responsiveWidth + ')';
-      },
-
-      /**
-       * NOTE(keanulee): IE/Edge does not properly update element styles when using
-       * dynamically inserted style tags that match with :not([attribute]) rules,
-       * so we use a :not(.class) rule instead. Ref
-       * https://connect.microsoft.com/IE/feedbackdetail/view/2217046/element-styles-not-updated-when-using-dynamically-inserted-style-tags-that-match-with-not-attribute-rules
-       */
-      _computeClass: function(narrow) {
-        return narrow ? 'narrow' : '';
+        return forceNarrow ? '(min-width: 0px)' : '(max-width: ' + responsiveWidth + ')';
       }
     });
   </script>

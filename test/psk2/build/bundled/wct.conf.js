@@ -1,3 +1,5 @@
+'use strict';
+
 /**
 @license
 Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
@@ -17,10 +19,9 @@ var ret = {
 };
 
 var mapping = {};
-var rootPath = (__dirname).split(path.sep).slice(-1)[0];
+var rootPath = __dirname.split(path.sep).slice(-1)[0];
 
-mapping['/components/' + rootPath  +
-'/bower_components'] = 'bower_components';
+mapping['/components/' + rootPath + '/bower_components'] = 'bower_components';
 
 ret.webserver.pathMappings.push(mapping);
 

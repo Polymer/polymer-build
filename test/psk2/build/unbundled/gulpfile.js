@@ -1,52 +1,52 @@
-const gulp = require('gulp');
-const logging = require('plylog');
-const mergeStream = require('merge-stream');
+'use strict';
 
-const polymer = require('../../lib/polymer-build');
+var gulp = require('gulp');
+var gulpif = require('gulp-if');
+var babel = require('gulp-babel');
+var logging = require('plylog');
+var mergeStream = require('merge-stream');
+
+var polymer = require('../../lib/polymer-build');
 
 logging.setVerbose();
 
-const PolymerProject = polymer.PolymerProject;
-const fork = polymer.forkStream;
+var PolymerProject = polymer.PolymerProject;
+var fork = polymer.forkStream;
 
-let project = new PolymerProject({
+var project = new PolymerProject({
   root: process.cwd(),
   entrypoint: 'index.html',
-  shell: 'src/psk-app/psk-app.html',
+  shell: 'src/psk-app/psk-app.html'
 });
 
-gulp.task('test1', () => {
+gulp.task('test1', function () {
 
   // process source files in the project
-  let sources = project.sources()
-    .pipe(project.splitHtml())
-    // add compilers or optimizers here!
-    // TODO(justinfagnani): add in default optimizer passes
-    .pipe(project.rejoinHtml());
+  var sources = project.sources().pipe(project.splitHtml()).pipe(gulpif('*.js', babel({ presets: ['es2015'] })))
+  // add compilers or optimizers here!
+  // TODO(justinfagnani): add in default optimizer passes
+  .pipe(project.rejoinHtml());
 
   // process dependencies
-  let dependencies = project.dependencies()
-    .pipe(project.splitHtml())
-    // add compilers or optimizers here!
-    // TODO(justinfagnani): add in default optimizer passes
-    .pipe(project.rejoinHtml());
+  var dependencies = project.dependencies().pipe(project.splitHtml())
+  // add compilers or optimizers here!
+  // TODO(justinfagnani): add in default optimizer passes
+  .pipe(project.rejoinHtml());
 
   // merge the source and dependencies streams to we can analyze the project
-  let allFiles = mergeStream(sources, dependencies)
-    .pipe(project.analyze);
+  var allFiles = mergeStream(sources, dependencies).pipe(project.analyze);
 
   // fork the stream in case downstream transformers mutate the files
   // this fork will vulcanize the project
-  let bundled = fork(allFiles)
-    .pipe(project.bundle)
-    // write to the bundled folder
-    // TODO(justinfagnani): allow filtering of files before writing
-    .pipe(gulp.dest('build/bundled'));
+  var bundled = fork(allFiles).pipe(project.bundle)
+  // write to the bundled folder
+  // TODO(justinfagnani): allow filtering of files before writing
+  .pipe(gulp.dest('build/bundled'));
 
-  let unbundled = fork(allFiles)
-    // write to the unbundled folder
-    // TODO(justinfagnani): allow filtering of files before writing
-    .pipe(gulp.dest('build/unbundled'));
+  var unbundled = fork(allFiles)
+  // write to the unbundled folder
+  // TODO(justinfagnani): allow filtering of files before writing
+  .pipe(gulp.dest('build/unbundled'));
 
   return mergeStream(bundled, unbundled);
 });

@@ -25,20 +25,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </template>
   </test-fixture>
 
-  <script>
-    suite('psk-page-home tests', function() {
-      var home;
+  <script>'use strict';
 
-      setup(function() {
-        home = fixture('basic');
-      });
+suite('psk-page-home tests', function () {
+  var home;
 
-      test('Page Title should be Home', function() {
-        var pageTitle = Polymer.dom(home.root).querySelector('.page-title');
-        assert.equal(pageTitle.textContent, 'Home');
-      })
-    });
-  </script>
+  setup(function () {
+    home = fixture('basic');
+  });
+
+  test('Page Title should be Home', function () {
+    var pageTitle = Polymer.dom(home.root).querySelector('.page-title');
+    assert.equal(pageTitle.textContent, 'Home');
+  });
+});</script>
 
 
 

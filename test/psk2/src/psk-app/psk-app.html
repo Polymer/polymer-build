@@ -154,6 +154,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         if (!this.route.path) {
           this.set('route.path', '/');
         }
+
+        let foo = () => {
+          console.log('hello from foo');
+        }
+        foo();
       },
 
       _drawerSelected: function() {

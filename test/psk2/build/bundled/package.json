@@ -12,5 +12,10 @@
   "engines": {
     "node": ">=0.10.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "babel-preset-es2015": "^6.9.0",
+    "gulp-babel": "^6.1.2",
+    "gulp-if": "^2.0.1"
+  }
 }

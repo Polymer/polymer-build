@@ -1,9 +1,11 @@
-# App Layout [![Build Status](https://travis-ci.org/PolymerLabs/app-layout.svg?branch=master)](https://travis-ci.org/PolymerLabs/app-layout)
+# App Layout [![Build Status](https://travis-ci.org/PolymerElements/app-layout.svg?branch=master)](https://travis-ci.org/PolymerElements/app-layout)
 
 
-<img src="https://app-layout-assets.appspot.com/assets/docs/app-layout.png" width="300" height="210">
+[<img src="https://app-layout-assets.appspot.com/assets/docs/app-layout.png" width="300" height="210">](https://polymerelements.github.io/app-layout/)
 
-https://polymerlabs.github.io/app-layout/
+https://polymerelements.github.io/app-layout/
+
+For additional documentation, please check out [Responsive app layout](https://www.polymer-project.org/1.0/toolbox/app-layout).
 
 A set of layout elements for your app. It includes:
 
@@ -25,7 +27,7 @@ A set of layout elements for your app. It includes:
 ### Install
 
 ```bash
-$ bower install PolymerLabs/app-layout --save
+$ bower install PolymerElements/app-layout --save
 ```
 
 ### Import

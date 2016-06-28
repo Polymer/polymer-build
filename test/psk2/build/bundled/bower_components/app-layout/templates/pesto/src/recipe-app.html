@@ -6,25 +6,25 @@ The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
 The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
---><html><head><link rel="import" href="../../../../polymer/polymer.html">
+--><html><head><link rel="import" href="../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../../../carbon-route/carbon-location.html">
-<link rel="import" href="../../../../carbon-route/carbon-route.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
 
-<link rel="import" href="../../../../iron-flex-layout/iron-flex-layout.html">
-<link rel="import" href="../../../../iron-pages/iron-pages.html">
-<link rel="import" href="../../../../iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 
-<link rel="import" href="../../../../paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../../../paper-item/paper-item.html">
-<link rel="import" href="../../../../paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
 
-<link rel="import" href="../../../app-drawer-layout/app-drawer-layout.html">
-<link rel="import" href="../../../app-drawer/app-drawer.html">
-<link rel="import" href="../../../app-header-layout/app-header-layout.html">
-<link rel="import" href="../../../app-header/app-header.html">
-<link rel="import" href="../../../app-toolbar/app-toolbar.html">
-<link rel="import" href="../../../app-scrollpos-control/app-scrollpos-control.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-layout/app-scrollpos-control/app-scrollpos-control.html">
 
 <link rel="import" href="recipe-detail.html">
 <link rel="import" href="recipe-list.html">
@@ -78,9 +78,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     }
     </style>
 
-    <carbon-location route="{{_route}}" use-hash-as-path=""></carbon-location>
-    <carbon-route route="{{_route}}" pattern="/:page" data="{{_pageData}}" tail="{{_subRoute}}"></carbon-route>
-    <carbon-route route="{{_subRoute}}" pattern="/:recipe" data="{{_recipeData}}"></carbon-route>
+    <app-location route="{{_route}}" use-hash-as-path=""></app-location>
+    <app-route route="{{_route}}" pattern="/:page" data="{{_pageData}}" tail="{{_subRoute}}"></app-route>
+    <app-route route="{{_subRoute}}" pattern="/:id" data="{{_idData}}"></app-route>
 
     <app-drawer-layout responsive-width="1280px">
 
@@ -130,7 +130,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           <paper-icon-button icon="app:menu" drawer-toggle=""></paper-icon-button>
         </recipe-list>
 
-        <recipe-detail id="detailView" name="detail" recipe="[[_getRecipe(recipes, _recipeData.recipe)]]"></recipe-detail>
+        <recipe-detail id="detailView" name="detail" recipe="[[_getRecipe(recipes, _idData.id)]]"></recipe-detail>
 
       </iron-pages>
 
@@ -154,11 +154,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       _pageData: Object,
 
-      _recipeData: Object
+      _idData: Object
 
     },
 
-    ready: function() {
+    attached: function() {
       this.async(function() {
         if (!this._route.path) {
           this.set('_route.path', '/home');
@@ -171,10 +171,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     _getRecipe: function() {
-      if (this.recipes && this._recipeData.recipe) {
+      if (this.recipes && this._idData.id) {
         for (var i = 0; i < this.recipes.length; ++i) {
           var r = this.recipes[i];
-          if (r.name === this._recipeData.recipe) {
+          if (r.id === this._idData.id) {
             return r;
           }
         }

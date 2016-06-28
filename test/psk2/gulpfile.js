@@ -1,4 +1,6 @@
 const gulp = require('gulp');
+const gulpif = require('gulp-if');
+const babel = require('gulp-babel');
 const logging = require('plylog');
 const mergeStream = require('merge-stream');
 
@@ -20,6 +22,7 @@ gulp.task('test1', () => {
   // process source files in the project
   let sources = project.sources()
     .pipe(project.splitHtml())
+    .pipe(gulpif('*.js', babel({presets: ['es2015']})))
     // add compilers or optimizers here!
     // TODO(justinfagnani): add in default optimizer passes
     .pipe(project.rejoinHtml());

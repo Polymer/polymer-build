@@ -6,26 +6,26 @@ The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
 The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
---><html><head><link rel="import" href="../../../../polymer/polymer.html">
+--><html><head><link rel="import" href="../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../../../carbon-route/carbon-location.html">
-<link rel="import" href="../../../../carbon-route/carbon-route.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
 
-<link rel="import" href="../../../../iron-flex-layout/iron-flex-layout.html">
-<link rel="import" href="../../../../iron-pages/iron-pages.html">
-<link rel="import" href="../../../../iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 
-<link rel="import" href="../../../../paper-fab/paper-fab.html">
-<link rel="import" href="../../../../paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../../../paper-styles/shadow.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-styles/shadow.html">
 
-<link rel="import" href="../../../app-drawer-layout/app-drawer-layout.html">
-<link rel="import" href="../../../app-drawer/app-drawer.html">
-<link rel="import" href="../../../app-scroll-effects/app-scroll-effects.html">
-<link rel="import" href="../../../app-header/app-header.html">
-<link rel="import" href="../../../app-header-layout/app-header-layout.html">
-<link rel="import" href="../../../app-toolbar/app-toolbar.html">
-<link rel="import" href="../../../app-scrollpos-control/app-scrollpos-control.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-layout/app-scrollpos-control/app-scrollpos-control.html">
 
 <link rel="import" href="article-headline.html">
 <link rel="import" href="article-detail.html">
@@ -83,26 +83,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       .title-toolbar {
         @apply(--layout-center-center);
-        width: 100vw;
         box-sizing: border-box;
+      }
+      
+      .nav-title-toolbar {
+        color: #fff;
+        width: 100vw;
+      }
+
+      .main-title-toolbar {
+        width: 100%;
       }
 
       .title {
         padding-bottom: 40px;
         font-size: 60px;
         font-weight: 800;
-      }
-
-      .nav-title-toolbar {
-        color: #fff;
-      }
-
-      app-drawer-layout:not([narrow]) .nav-title-toolbar {
-        visibility: hidden;
-      }
-
-      app-drawer-layout:not([narrow]) .main-title-toolbar {
-        width: 100%;
       }
       
       .category-page {
@@ -145,10 +141,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </style>
 
     <!-- setup routes -->
-    <carbon-location route="{{route}}" use-hash-as-path=""></carbon-location>
-    <carbon-route route="{{route}}" pattern="/:category" data="{{categoryData}}" tail="{{subRoute}}"></carbon-route>
-    <carbon-route route="{{subRoute}}" pattern="/:page" data="{{pageData}}" tail="{{subsubRoute}}"></carbon-route>
-    <carbon-route route="{{subsubRoute}}" pattern="/:title" data="{{titleData}}"></carbon-route>
+    <app-location route="{{route}}" use-hash-as-path=""></app-location>
+    <app-route route="{{route}}" pattern="/:category" data="{{categoryData}}" tail="{{subRoute}}"></app-route>
+    <app-route route="{{subRoute}}" pattern="/:page" data="{{pageData}}" tail="{{subsubRoute}}"></app-route>
+    <app-route route="{{subsubRoute}}" pattern="/:id" data="{{idData}}"></app-route>
 
     <!-- manages page's scroll position -->
     <app-scrollpos-control selected="[[categoryData.category]]/[[pageData.page]]" reset="[[_equal(pageData.page, 'detail')]]"></app-scrollpos-control>
@@ -218,7 +214,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                   <!-- 2-columns grid -->
                   <two-columns-grid column-width="396" gutter="4">
                     <template is="dom-repeat" items="[[category.items]]" as="article">
-                      <a is="article-headline" href="#/[[category.name]]/detail/[[article.title]]" article="[[article]]"></a>
+                      <a is="article-headline" href="#/[[category.name]]/detail/[[article.id]]" article="[[article]]"></a>
                     </template>
                   </two-columns-grid>
                   
@@ -264,15 +260,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         pageData: Object,
 
-        titleData: Object
+        idData: Object
 
       },
 
       observers: [
-        '_updateArticle(articles, categoryData.category, titleData.title)'
+        '_updateArticle(articles, categoryData.category, idData.id)'
       ],
 
-      ready: function() {
+      attached: function() {
         this.async(function() {
           if (!this.route.path) {
             this.set('route.path', '/art/list');
@@ -284,11 +280,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         return value1 === value2;
       },
 
-      _updateArticle: function(articles, category, title) {
+      _updateArticle: function(articles, category, id) {
         for (var i=0, cat; cat=articles[i]; i++) {
           if (cat.name === category) {
             for (var j=0, article; article=cat.items[j]; j++) {
-              if (article.title === title) {
+              if (article.id === id) {
                 this.article = article;
                 return;
               }

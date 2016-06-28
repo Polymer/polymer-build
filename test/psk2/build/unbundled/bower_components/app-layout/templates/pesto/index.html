@@ -15,10 +15,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   <link rel="manifest" href="manifest.json">
 
-  <script src="../../../webcomponentsjs/webcomponents-lite.js"></script>
+  <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Raleway:400,700">
-  <link rel="import" href="../../../iron-ajax/iron-ajax.html">
+  <link rel="import" href="bower_components/iron-ajax/iron-ajax.html">
   <link rel="import" href="src/recipe-app.html">
 
   <style is="custom-style">
@@ -42,8 +42,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   <template is="dom-bind">
 
-    <recipe-app recipes="{{data.recipes}}"></recipe-app>
-    <iron-ajax url="data/recipes.json" auto="" last-response="{{data}}"></iron-ajax>
+    <iron-ajax url="data/recipes.json" auto="" last-response="{{recipes}}"></iron-ajax>
+    <recipe-app recipes="[[recipes]]"></recipe-app>
 
   </template>
 
