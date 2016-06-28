@@ -1,0 +1,221 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-media-query/iron-media-query.html">
+<link rel="import" href="../../iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../app-drawer/app-drawer.html">
+
+<!--
+app-drawer-layout is a wrapper element that positions an app-drawer and other content. When
+the viewport width is smaller than `responsiveWidth`, this element changes to narrow layout.
+In narrow layout, the drawer will be stacked on top of the main content. The drawer will slide
+in/out to hide/reveal the main content.
+
+By default the drawer is aligned to the start, which is left in LTR layouts:
+
+```html
+<app-drawer-layout>
+  <app-drawer>
+    <!\-\- drawer content \-\->
+  </app-drawer>
+  <div>
+    <!\-\- main content \-\->
+  </div>
+</app-drawer-layout>
+```
+
+Align the drawer at the end:
+
+```html
+<app-drawer-layout>
+  <app-drawer align="end">
+    <!\-\- drawer content \-\->
+  </app-drawer>
+  <div>
+    <!\-\- main content \-\->
+  </div>
+</app-drawer-layout>
+```
+
+With an app-header-layout:
+
+```html
+<app-drawer-layout>
+  <app-drawer>
+    <!\-\- drawer content \-\->
+  </app-drawer>
+  <app-header-layout>
+    <app-header>
+      <app-toolbar>
+        <div title>App name</div>
+      </app-toolbar>
+    </app-header>
+
+    <!\-\- main content \-\->
+
+  </app-header-layout>
+</app-drawer-layout>
+```
+
+### Styling
+
+Custom property                          | Description                          | Default
+-----------------------------------------|--------------------------------------|---------
+`--app-drawer-layout-content-transition` | Transition for the content container | none
+
+@demo app-drawer-layout/demo.html
+-->
+
+<dom-module id="app-drawer-layout">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+
+      :host([fullbleed]) {
+        @apply(--layout-fit);
+      }
+
+      #contentContainer {
+        position: relative;
+
+        height: 100%;
+
+        transition: var(--app-drawer-layout-content-transition, none);
+      }
+
+      #contentContainer:not(.narrow) > ::content [drawer-toggle] {
+        display: none;
+      }
+    </style>
+
+    <div id="contentContainer" class$="[[_computeClass(narrow)]]">
+      <content select=":not(app-drawer)"></content>
+    </div>
+
+    <content id="drawerContent" select="app-drawer"></content>
+
+    <iron-media-query query="[[_computeMediaQuery(forceNarrow, responsiveWidth)]]"
+        on-query-matches-changed="_onQueryMatchesChanged"></iron-media-query>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'app-drawer-layout',
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      properties: {
+        /**
+         * Returns true if the panel is in narrow layout. This is useful if you
+         * need to show/hide elements based on the layout.
+         */
+        narrow: {
+          type: Boolean,
+          readOnly: true,
+          notify: true,
+          reflectToAttribute: true,
+          value: false
+        },
+
+        /**
+         * If true, ignore `responsiveWidth` setting and force the narrow layout.
+         */
+        forceNarrow: {
+          type: Boolean,
+          value: false,
+          observer: '_responsiveChange'
+        },
+
+        /**
+         * If the viewport's width is smaller than this value, the panel will change to narrow layout.
+         * In the mode the drawer will be closed.
+         */
+        responsiveWidth: {
+          type: String,
+          value: '640px'
+        }
+      },
+
+      listeners: {
+        'tap': '_tapHandler',
+        'app-drawer-reset-layout': 'resetLayout'
+      },
+
+      attached: function() {
+        this.resetLayout();
+      },
+
+      /**
+       * Gets the drawer element.
+       *
+       * @property drawer
+       */
+      get drawer() {
+        return Polymer.dom(this.$.drawerContent).getDistributedNodes()[0];
+      },
+
+      _tapHandler: function(e) {
+        var target = Polymer.dom(e).localTarget;
+        if (target && target.hasAttribute('drawer-toggle')) {
+          this.drawer.toggle();
+        }
+      },
+
+      _responsiveChange: function(narrow) {
+        this._setNarrow(narrow);
+        this.resetLayout();
+      },
+
+      resetLayout: function() {
+        this.debounce('_resetLayout', function() {
+          if (!this.isAttached) {
+            return;
+          }
+          this.drawer.opened = !this.narrow;
+          this.drawer.persistent = !this.narrow;
+          if (this.narrow) {
+            this.$.contentContainer.style.marginLeft = '';
+            this.$.contentContainer.style.marginRight = '';
+          } else if (this.drawer.position == 'right') {
+            this.$.contentContainer.style.marginLeft = '';
+            this.$.contentContainer.style.marginRight = this.drawer.getWidth() + 'px';
+          } else {
+            this.$.contentContainer.style.marginLeft = this.drawer.getWidth() + 'px';
+            this.$.contentContainer.style.marginRight = '';
+          }
+          this.notifyResize();
+        });
+      },
+
+      _onQueryMatchesChanged: function(event) {
+        this._responsiveChange(event.detail.value);
+      },
+
+      _computeMediaQuery: function(forceNarrow, responsiveWidth) {
+        return forceNarrow ? '' : '(max-width: ' + responsiveWidth + ')';
+      },
+
+      /**
+       * NOTE(keanulee): IE/Edge does not properly update element styles when using
+       * dynamically inserted style tags that match with :not([attribute]) rules,
+       * so we use a :not(.class) rule instead. Ref
+       * https://connect.microsoft.com/IE/feedbackdetail/view/2217046/element-styles-not-updated-when-using-dynamically-inserted-style-tags-that-match-with-not-attribute-rules
+       */
+      _computeClass: function(narrow) {
+        return narrow ? 'narrow' : '';
+      }
+    });
+  </script>
+</dom-module>
