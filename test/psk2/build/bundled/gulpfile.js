@@ -3,6 +3,7 @@
 var gulp = require('gulp');
 var gulpif = require('gulp-if');
 var babel = require('gulp-babel');
+var imagemin = require('gulp-imagemin');
 var logging = require('plylog');
 var mergeStream = require('merge-stream');
 
@@ -22,7 +23,11 @@ var project = new PolymerProject({
 gulp.task('test1', function () {
 
   // process source files in the project
-  var sources = project.sources().pipe(project.splitHtml()).pipe(gulpif('*.js', babel({ presets: ['es2015'] })))
+  var sources = project.sources().pipe(project.splitHtml()).pipe(gulpif('*.js', babel({
+    presets: ['es2015']
+  }))).pipe(gulpif('*.{png,gif,jpg,svg}', imagemin({
+    progressive: true, interlaced: true
+  })))
   // add compilers or optimizers here!
   // TODO(justinfagnani): add in default optimizer passes
   .pipe(project.rejoinHtml());
