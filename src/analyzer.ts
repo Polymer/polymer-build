@@ -20,15 +20,10 @@ import {Node, queryAll, predicates, getAttribute} from 'dom5';
 
 import {FileCB} from './streams';
 import urlFromPath from './url-from-path';
+import {DocumentDeps, getDependenciesFromDocument} from './document-parser';
 
 const minimatchAll = require('minimatch-all');
 const logger = logging.getLogger('cli.build.analyzer');
-
-export interface DocumentDeps {
-  imports?: Array<string>;
-  scripts?: Array<string>;
-  styles?: Array<string>;
-}
 
 export class StreamAnalyzer extends Transform {
 
@@ -195,59 +190,7 @@ export class StreamAnalyzer extends Transform {
   _getDependencies(url: string): Promise<DocumentDeps> {
     let dir = posixPath.dirname(url);
     return this.analyzer.metadataTree(url)
-        .then((tree) => this._getDependenciesFromDescriptor(tree, dir));
-  }
-
-  _getDependenciesFromDescriptor(descriptor: DocumentDescriptor, dir: string): DocumentDeps {
-    let allHtmlDeps: string[] = [];
-    let allScriptDeps = new Set<string>();
-    let allStyleDeps = new Set<string>();
-
-    let deps: DocumentDeps = this._collectScriptsAndStyles(descriptor);
-    deps.scripts.forEach((s) => allScriptDeps.add(posixPath.resolve(dir, s)));
-    deps.styles.forEach((s) => allStyleDeps.add(posixPath.resolve(dir, s)));
-    if (descriptor.imports) {
-      let queue = descriptor.imports.slice();
-      while (queue.length > 0) {
-        let next = queue.shift();
-        if (!next.href) {
-          continue;
-        }
-        allHtmlDeps.push(next.href);
-        let childDeps = this._getDependenciesFromDescriptor(next, posixPath.dirname(next.href));
-        allHtmlDeps = allHtmlDeps.concat(childDeps.imports);
-        childDeps.scripts.forEach((s) => allScriptDeps.add(s));
-        childDeps.styles.forEach((s) => allStyleDeps.add(s));
-      }
-    }
-
-    return {
-      scripts: Array.from(allScriptDeps),
-      styles: Array.from(allStyleDeps),
-      imports: allHtmlDeps,
-    };
-  }
-
-  _collectScriptsAndStyles(tree: DocumentDescriptor): DocumentDeps {
-    let scripts: string[] = [];
-    let styles: string[] = [];
-    tree.html.script.forEach((script: Node) => {
-      // TODO(justinfagnani): stop patching Nodes in Hydrolysis
-      let __hydrolysisInlined = (<any>script).__hydrolysisInlined;
-      if (__hydrolysisInlined) {
-        scripts.push(__hydrolysisInlined);
-      }
-    });
-    tree.html.style.forEach((style: Node) => {
-      let href = getAttribute(style, 'href');
-      if (href) {
-        styles.push(href);
-      }
-    });
-    return {
-      scripts,
-      styles
-    };
+        .then((tree) => getDependenciesFromDocument(tree, dir));
   }
 }
 
