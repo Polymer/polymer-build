@@ -31,6 +31,7 @@
     "custom_typings/vinyl-fs.d.ts",
     "src/analyzer.ts",
     "src/bundle.ts",
+    "src/document-parser.ts",
     "src/fork-stream.ts",
     "src/optimize.ts",
     "src/polymer-build.ts",
