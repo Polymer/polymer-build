@@ -9,18 +9,17 @@
  */
 
 import * as dom5 from 'dom5';
-import {posix as posixPath} from 'path';
 import * as osPath from 'path';
 import * as logging from 'plylog';
-import {Transform} from 'stream';
+import {Transform, PassThrough} from 'stream';
 import File = require('vinyl');
 import * as vfs from 'vinyl-fs';
-import {StreamAnalyzer} from './analyzer';
+import {StreamAnalyzer, DepsIndex} from './analyzer';
 import {Bundler} from './bundle';
 import {optimize, OptimizeOptions} from './optimize';
 import {FileCB} from './streams';
+import {writeServiceWorker, SWConfig} from './service-worker';
 import {forkStream} from './fork-stream';
-const mergeStream = require('merge-stream');
 
 const logger = logging.getLogger('polymer-project');
 const pred = dom5.predicates;
@@ -67,6 +66,13 @@ export interface ProjectOptions {
    * as dependencies in the build target.
    */
   includeDependencies?: string[];
+}
+
+
+export interface AddServiceWorkerOptions {
+  bundled?: boolean;
+  serviceWorkerPath?: string;
+  swConfig?: SWConfig;
 }
 
 export const defaultSourceGlobs = [
@@ -219,7 +225,7 @@ export class PolymerProject {
    * use by the bundler transform. This transform must only be used in one
    * stream.
    */
-  get analyze(): Transform {
+  get analyze(): StreamAnalyzer {
     return this._analyzer;
   }
 
@@ -228,10 +234,52 @@ export class PolymerProject {
    * project according to the dependency analysis done by the `analyze`
    * transform. `analyze` must be in the pipeline before this transform.
    */
-  get bundle(): Transform {
+  get bundle(): Bundler {
     // TODO(justinfagnani): we need a stream of just the bundled files, for
     // minimal bundled build folders.
     return this._bundler;
+  }
+
+  /**
+   * Returns a service worker transform stream. This stream will add a service
+   * worker to the build stream, based on the options passed and build analysis
+   * performed eariler in the stream.
+   *
+   * Note that this stream closely resembles a pass-through stream. It does not
+   * modify the files that pass through it. It only ever adds 1 file.
+   */
+  addServiceWorker(buildRoot: string, options: AddServiceWorkerOptions): Promise<{}> {
+    // Create a list of assets to precache, based on what the analyzer (and bundler, if applicable)
+    // can tell us about the build. This value is a promise that will resolve once the build
+    // has been analyzed.
+    let resolvePrecachedAssets: Promise<string[]>
+      = this._analyzer.analyzeDependencies.then((depsIndex: DepsIndex) => {
+      let precachedAssets = new Set<string>(this._analyzer.allFragments);
+
+      // If this is a bundled build, add the shared bundle URL
+      if (options.bundled) {
+        return Array.from(precachedAssets).concat(this._bundler.sharedBundleUrl);
+      }
+
+      // Otherwise, include all relevent dependencies (html imports, scripts, etc.)
+      for (let dep of depsIndex.depsToFragments.keys()) {
+        precachedAssets.add(dep);
+      }
+      for (let depImports of depsIndex.fragmentToFullDeps.values()) {
+        depImports.scripts.forEach((s) => precachedAssets.add(s));
+        depImports.styles.forEach((s) => precachedAssets.add(s));
+      }
+      return Array.from(precachedAssets);
+    });
+
+    return writeServiceWorker({
+      buildRoot: buildRoot,
+      root: this.root,
+      entrypoint: this.entrypoint,
+      serviceWorkerPath: options.serviceWorkerPath,
+      precachedAssetsPromise: resolvePrecachedAssets,
+      swConfig: options.swConfig || {},
+    });
   }
 
   isSplitFile(parentPath: string): boolean {
@@ -261,7 +309,6 @@ export class PolymerProject {
   }
 
 }
-
 
 /**
  * Represents a file that is split into multiple files.
