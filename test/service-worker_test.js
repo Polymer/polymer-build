@@ -36,9 +36,10 @@ suite('service-worker', () => {
       ],
     });
 
-    temp.mkdir('polymer-cli', (err, dir) => {
-      if (err) {
-        return done(err);
+    temp.mkdir('polymer-cli', (error, dir) => {
+      if (error) {
+        done(error);
+        return;
       }
       testBuildRoot = dir;
       vfs.src(path.join(__dirname, 'test-project/**'))

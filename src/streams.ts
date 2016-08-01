@@ -59,9 +59,9 @@ export class VinylReaderTransform extends Transform {
     encoding: string,
     callback: (error?: Error, data?: File) => void
   ): void {
-    fs.readFile(filePath, (err?: Error, data?: Buffer) => {
-      if (err) {
-        callback(err);
+    fs.readFile(filePath, (error?: Error, data?: Buffer) => {
+      if (error) {
+        callback(error);
         return;
       }
       callback(null, new File({

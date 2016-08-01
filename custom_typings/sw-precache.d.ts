@@ -30,6 +30,6 @@ declare module 'sw-precache' {
     verbose?: boolean;
   }
 
-  export function generate(options: SWConfig, callback: (err?: Error, fileContents?: string) => void): void;
-  export function write(filepath: string, options: SWConfig, callback: (err?: Error) => void): void;
+  export function generate(options: SWConfig, callback: (error?: Error, fileContents?: string) => void): void;
+  export function write(filepath: string, options: SWConfig, callback: (error?: Error) => void): void;
 }

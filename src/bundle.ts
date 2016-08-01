@@ -138,9 +138,9 @@ export class Bundler extends Transform {
             inlineCss: true,
             inputUrl: fragmentUrl,
           });
-          vulcanize.process(null, (err: any, doc: string) => {
-            if (err) {
-              reject(err);
+          vulcanize.process(null, (error: any, doc: string) => {
+            if (error) {
+              reject(error);
             } else {
               resolve({
                 url: fragment,
@@ -240,9 +240,9 @@ export class Bundler extends Transform {
         inlineCss: true,
         inputUrl: this.sharedBundleUrl,
       });
-      vulcanize.process(null, (err: any, doc: any) => {
-        if (err) {
-          reject(err);
+      vulcanize.process(null, (error: any, doc: any) => {
+        if (error) {
+          reject(error);
         } else {
           resolve({
             url: this.sharedBundleUrl,

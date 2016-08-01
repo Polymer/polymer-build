@@ -89,9 +89,9 @@ export function generateServiceWorker(options: AddServiceWorkerOptions): Promise
 
     return new Promise((resolve, reject) => {
       logger.debug(`writing service worker...`, swConfig);
-      swPrecacheGenerate(swConfig, (err?: Error, fileContents?: string) => {
-        if (err) {
-          reject(err);
+      swPrecacheGenerate(swConfig, (error?: Error, fileContents?: string) => {
+        if (error) {
+          reject(error);
         } else {
           resolve(new Buffer(fileContents));
         }
@@ -111,9 +111,9 @@ export function addServiceWorker(options: AddServiceWorkerOptions): Promise<{}> 
   return generateServiceWorker(options).then((fileContents: Buffer) => {
     return new Promise((resolve, reject) => {
       let serviceWorkerPath = path.join(options.buildRoot, options.serviceWorkerPath || 'service-worker.js');
-      writeFile(serviceWorkerPath, fileContents, (err) => {
-        if (err) {
-          reject(err);
+      writeFile(serviceWorkerPath, fileContents, (error) => {
+        if (error) {
+          reject(error);
         } else {
           resolve();
         }

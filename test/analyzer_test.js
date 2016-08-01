@@ -39,7 +39,7 @@ suite('Analyzer', () => {
               assert.deepEqual(ftd.get(frag), ['shared-1.html', 'shared-2.html']);
             }
             done();
-          }).catch((err) => done(err));
+          }).catch(done);
       });
     });
 

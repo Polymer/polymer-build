@@ -70,8 +70,8 @@ suite('Bundler', () => {
     bundledStream.on('end', (data) => {
       resolve(files);
     });
-    bundledStream.on('error', (err) => {
-      reject(err);
+    bundledStream.on('error', (error) => {
+      reject(error);
     });
     pushFiles(options.files);
   });

@@ -335,9 +335,9 @@ class HtmlSplitter extends Transform {
           contents: new Buffer(splitContents),
         });
         callback(null, newFile);
-      } catch (e) {
-        logger.error(e);
-        callback(e, null);
+      } catch (error) {
+        logger.error(error);
+        callback(error, null);
       }
     } else {
       callback(null, file);
