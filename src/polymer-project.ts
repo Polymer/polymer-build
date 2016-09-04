@@ -311,8 +311,8 @@ class HtmlSplitter extends Transform {
         for (let i = 0; i < scriptTags.length; i++) {
           let scriptTag = scriptTags[i];
           let source = dom5.getTextContent(scriptTag);
-          let typeAtribute = dom5.getAttribute(scriptTag, 'type');
-          let extension = typeAtribute && extensionsForType[typeAtribute] || 'js';
+          let typeAttribute = dom5.getAttribute(scriptTag, 'type');
+          let extension = typeAttribute && extensionsForType[typeAttribute] || 'js';
           let childFilename = `${osPath.basename(filePath)}_script_${i}.${extension}`;
           let childPath = osPath.join(osPath.dirname(filePath), childFilename);
           scriptTag.childNodes = [];
@@ -325,6 +325,24 @@ class HtmlSplitter extends Transform {
           });
           this._project.addSplitPath(filePath, childPath);
           this.push(scriptFile);
+        }
+
+        for (let i = 0; i < styleTags.length; i++) {
+            let styleTag = styleTags[i];
+            let source = dom5.getTextContent(styleTag);
+            let extension = 'css';
+            let childFilename = `${osPath.basename(filePath)}_style_${i}.${extension}`;
+            let childPath = osPath.join(osPath.dirname(filePath), childFilename);
+            styleTag.childNodes = [];
+            dom5.setAttribute(styleTag, 'src', childFilename);
+            let styleFile = new File({
+                cwd: file.cwd,
+                base: file.base,
+                path: childPath,
+                contents: new Buffer(source),
+            });
+            this._project.addSplitPath(filePath, childPath);
+            this.push(styleFile);
         }
 
         let splitContents = dom5.serialize(doc);
@@ -353,6 +371,11 @@ class HtmlRejoiner extends Transform {
 
   static isExternalScript = pred.AND(
     pred.hasTagName('script'),
+    pred.hasAttr('src')
+  );
+
+  static isExternalStyle = pred.AND(
+    pred.hasTagName('style'),
     pred.hasAttr('src')
   );
 
@@ -410,6 +433,17 @@ class HtmlRejoiner extends Transform {
         dom5.setTextContent(scriptTag, scriptSource);
         dom5.removeAttribute(scriptTag, 'src');
       }
+    }
+
+    for (let i = 0; i < styleTags.length; i++) {
+        let styleTag = styleTags[i];
+        let srcAttribute = dom5.getAttribute(styleTag, 'src');
+        let stylePath = osPath.join(osPath.dirname(splitFile.path), srcAttribute);
+        if (splitFile.parts.has(stylePath)) {
+            let styleSource = splitFile.parts.get(stylePath);
+            dom5.setTextContent(styleTag, styleSource);
+            dom5.removeAttribute(styleTag, 'src');
+        }
     }
 
     let joinedContents = dom5.serialize(doc);
