@@ -9,8 +9,10 @@
  */
 
 import * as fs from 'fs';
-import {Analyzer, Deferred, Loader, Resolver, DocumentDescriptor}
-  from 'hydrolysis';
+import {Deferred, Resolver as HydrolysisResolver} from 'hydrolysis';
+import {Analyzer} from 'polymer-analyzer';
+import {UrlLoader} from 'polymer-analyzer/lib/url-loader/url-loader';
+import {Import} from 'polymer-analyzer/lib/model/import';
 import * as path from 'path';
 import {PassThrough, Transform} from 'stream';
 import File = require('vinyl');
@@ -20,11 +22,15 @@ import {Node, queryAll, predicates, getAttribute} from 'dom5';
 
 import {FileCB, VinylReaderTransform} from './streams';
 import {urlFromPath, pathFromUrl} from './path-transformers';
-import {DocumentDeps, getDependenciesFromDocument, isDependencyExternal}
-  from './get-dependencies-from-document';
 
 const minimatchAll = require('minimatch-all');
 const logger = logging.getLogger('cli.build.analyzer');
+
+export interface DocumentDeps {
+  imports?: Array<string>;
+  scripts?: Array<string>;
+  styles?: Array<string>;
+}
 
 export interface DepsIndex {
   // An index of dependency -> fragments that depend on it
@@ -36,6 +42,17 @@ export interface DepsIndex {
   fragmentToFullDeps: Map<string, DocumentDeps>;
 }
 
+/**
+ * Detects if a url is external by checking it's protocol. Also checks if it
+ * starts with '//', which can be an alias to the page's current protocol
+ * in the browser.
+ */
+function isDependencyExternal(url: string) {
+  // TODO(fks) 08-01-2016: Add additional check for files on current hostname
+  // but external to this application root. Ignore them.
+  return parseUrl(url).protocol !== null || url.startsWith('//');
+}
+
 export class StreamAnalyzer extends Transform {
 
   root: string;
@@ -45,8 +62,7 @@ export class StreamAnalyzer extends Transform {
   allFragments: string[];
   sourceGlobs: string[];
 
-  resolver: StreamResolver;
-  loader: Loader;
+  loader: StreamLoader;
   analyzer: Analyzer;
 
   private _dependenciesStream = new PassThrough({ objectMode: true });
@@ -86,10 +102,10 @@ export class StreamAnalyzer extends Transform {
       this.allFragments = this.allFragments.concat(fragments);
     }
 
-    this.resolver = new StreamResolver(this);
-    this.loader = new Loader();
-    this.loader.addResolver(this.resolver);
-    this.analyzer = new Analyzer(false, this.loader);
+    this.loader = new StreamLoader(this);
+    this.analyzer = new Analyzer({
+      urlLoader: this.loader,
+    });
 
     // Connect the dependencies stream that the analyzer pushes into to the
     // processing stream which loads each file and attaches the file contents.
@@ -111,13 +127,13 @@ export class StreamAnalyzer extends Transform {
     return this._dependenciesProcessingStream;
   }
 
-  _transform(file: File, encoding: string, callback: FileCB): void {
+  async _transform(file: File, encoding: string, callback: FileCB): Promise<void> {
     let filePath = file.path;
     this.addFile(file);
 
     // If our resolver is waiting for this file, resolve its deferred loader
-    if (this.resolver.hasDeferredFile(filePath)) {
-      this.resolver.resolveDeferredFile(filePath, file);
+    if (this.loader.hasDeferredFile(filePath)) {
+      this.loader.resolveDeferredFile(filePath, file);
     }
 
     // Propagate the file so that the stream can continue
@@ -125,26 +141,24 @@ export class StreamAnalyzer extends Transform {
 
     // If the file is a fragment, begin analysis on its dependencies
     if (this.isFragment(file)) {
-      this._getDependencies(urlFromPath(this.root, filePath))
-        .then((deps: DocumentDeps) => {
-          // Add all found dependencies to our index
-          this._addDependencies(filePath, deps);
-          this.allFragmentsToAnalyze.delete(filePath);
-          // If there are no more fragments to analyze, close the dependency stream
-          if (this.allFragmentsToAnalyze.size === 0) {
-            this._dependenciesStream.end();
-          }
-        });
+      const deps = await this._getDependencies(urlFromPath(this.root, filePath));
+      // Add all found dependencies to our index
+      this._addDependencies(filePath, deps);
+      this.allFragmentsToAnalyze.delete(filePath);
+      // If there are no more fragments to analyze, close the dependency stream
+      if (this.allFragmentsToAnalyze.size === 0) {
+        this._dependenciesStream.end();
+      }
     }
   }
 
   _flush(done: (error?: any) => void) {
     // If stream finished with files that still needed to be loaded, error out
-    if (this.resolver.hasDeferredFiles()) {
-      for (let fileUrl of this.resolver.deferredFiles.keys()) {
+    if (this.loader.hasDeferredFiles()) {
+      for (let fileUrl of this.loader.deferredFiles.keys()) {
         logger.error(`${fileUrl} never loaded`);
       }
-      done(new Error(`${this.resolver.deferredFiles.size} deferred files were never loaded`));
+      done(new Error(`${this.loader.deferredFiles.size} deferred files were never loaded`));
       return;
     }
     // Resolve our dependency analysis promise now that we have seen all files
@@ -169,7 +183,7 @@ export class StreamAnalyzer extends Transform {
   }
 
   /**
-   * A side-channel to add files to the resolver that did not come throgh the
+   * A side-channel to add files to the loader that did not come throgh the
    * stream transformation. This is for generated files, like
    * shared-bundle.html. This should probably be refactored so that the files
    * can be injected into the stream.
@@ -186,11 +200,34 @@ export class StreamAnalyzer extends Transform {
   /**
    * Attempts to retreive document-order transitive dependencies for `url`.
    */
-  _getDependencies(url: string): Promise<DocumentDeps> {
-    let dir = path.posix.dirname(url);
+  async _getDependencies(url: string): Promise<DocumentDeps> {
+    const doc = await this.analyzer.analyzeRoot(url);
+    const scripts = new Set<string>();
+    const styles = new Set<string>();
+    const imports = new Set<string>();
 
-    return this.analyzer.metadataTree(url)
-        .then((tree) => getDependenciesFromDocument(tree, dir));
+    for (const importDep of doc.getByKind('import')) {
+      const importUrl = importDep.url;
+      if (isDependencyExternal(importUrl)) {
+        logger.debug(`ignoring external dependency: ${importUrl}`);
+      } else if (importDep.type === 'html-script') {
+        scripts.add(importUrl);
+      } else if (importDep.type === 'html-style') {
+        styles.add(importUrl);
+      } else if (importDep.type === 'html-import') {
+        imports.add(importUrl);
+      } else {
+        logger.warn(`unexpected import type encountered: ${importDep.type}`);
+      }
+    }
+
+    const deps = {
+      scripts: Array.from(scripts),
+      styles: Array.from(styles),
+      imports: Array.from(imports),
+    };
+    logger.debug(`dependencies analyzed for: ${url}`, deps);
+    return deps;
   }
 
   _addDependencies(filePath: string, deps: DocumentDeps) {
@@ -238,11 +275,15 @@ export class StreamAnalyzer extends Transform {
   }
 }
 
-export class StreamResolver implements Resolver {
+// TODO(fks) 09-21-2016: Remove once the move to polymer-analyzer is completed
+export interface BackwardsCompatibleUrlLoader
+  extends UrlLoader, HydrolysisResolver {};
+
+export class StreamLoader implements BackwardsCompatibleUrlLoader {
 
   root: string;
   analyzer: StreamAnalyzer;
-  deferredFiles = new Map<string, Deferred<string>>();
+  deferredFiles = new Map<string, (a: string) => string>();
 
   constructor(analyzer: StreamAnalyzer) {
     this.analyzer = analyzer;
@@ -259,19 +300,22 @@ export class StreamResolver implements Resolver {
 
   resolveDeferredFile(filePath: string, file: File): void {
     let deferred = this.deferredFiles.get(filePath);
-    deferred.resolve(file.contents.toString());
+    deferred(file.contents.toString());
     this.deferredFiles.delete(filePath);
   }
 
-  accept(url: string, deferred: Deferred<string>): boolean {
-    logger.debug(`accept: ${url}`);
+  canLoad(url: string): boolean {
+    return true;
+  }
+
+  load(url: string): Promise<string> {
+    logger.debug(`loading: ${url}`);
     let urlObject = parseUrl(url);
 
     // Resolve external files as empty strings. We filter these out later
     // in the analysis process to make sure they aren't included in the build.
     if (isDependencyExternal(url)) {
-      deferred.resolve('');
-      return true;
+      return Promise.resolve('');
     }
 
     let urlPath = decodeURIComponent(urlObject.pathname);
@@ -279,12 +323,27 @@ export class StreamResolver implements Resolver {
     let file = this.analyzer.getFile(filePath);
 
     if (file) {
-      deferred.resolve(file.contents.toString());
-    } else {
-      this.deferredFiles.set(filePath, deferred);
-      this.analyzer.pushDependency(urlPath);
+      return Promise.resolve(file.contents.toString());
     }
 
+    type Callback = (a: string) => string;
+    let callback: Callback;
+    const waitForFile = new Promise((resolve: Callback, reject: () => any) => {
+      callback = resolve;
+    });
+    this.deferredFiles.set(filePath, callback);
+    this.analyzer.pushDependency(urlPath);
+    return waitForFile;
+  }
+
+  /**
+   * Wraps the load() method to work in a way that is compliant with vulcanize
+   * & the old UrlResolver interface. To be removed once migration from
+   * hydrolosis to polymer-analyzer is complete.
+   */
+  accept(url: string, deferred: Deferred<string>): boolean {
+    this.load(url).then(deferred.resolve);
     return true;
   }
+
 }
