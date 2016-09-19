@@ -9,8 +9,9 @@
  */
 
 import * as fs from 'fs';
-import {Analyzer, Deferred, Loader, Resolver, DocumentDescriptor}
-  from 'hydrolysis';
+// import {Analyzer, Deferred, Loader, Resolver, DocumentDescriptor}
+//   from 'hydrolysis';
+import {Analyzer, UrlLoader} from 'polymer-analyzer';
 import * as path from 'path';
 import {PassThrough, Transform} from 'stream';
 import File = require('vinyl');
@@ -45,8 +46,7 @@ export class StreamAnalyzer extends Transform {
   allFragments: string[];
   sourceGlobs: string[];
 
-  resolver: StreamResolver;
-  loader: Loader;
+  loader: StreamLoader;
   analyzer: Analyzer;
 
   private _dependenciesStream = new PassThrough({ objectMode: true });
@@ -86,10 +86,11 @@ export class StreamAnalyzer extends Transform {
       this.allFragments = this.allFragments.concat(fragments);
     }
 
-    this.resolver = new StreamResolver(this);
-    this.loader = new Loader();
-    this.loader.addResolver(this.resolver);
-    this.analyzer = new Analyzer(false, this.loader);
+    // this.resolver = new StreamResolver(this);
+    this.loader = new StreamLoader(this);
+    this.analyzer = new Analyzer({
+      urlLoader: this.loader,
+    });
 
     // Connect the dependencies stream that the analyzer pushes into to the
     // processing stream which loads each file and attaches the file contents.
@@ -116,8 +117,8 @@ export class StreamAnalyzer extends Transform {
     this.addFile(file);
 
     // If our resolver is waiting for this file, resolve its deferred loader
-    if (this.resolver.hasDeferredFile(filePath)) {
-      this.resolver.resolveDeferredFile(filePath, file);
+    if (this.loader.hasDeferredFile(filePath)) {
+      this.loader.resolveDeferredFile(filePath, file);
     }
 
     // Propagate the file so that the stream can continue
@@ -140,11 +141,11 @@ export class StreamAnalyzer extends Transform {
 
   _flush(done: (error?: any) => void) {
     // If stream finished with files that still needed to be loaded, error out
-    if (this.resolver.hasDeferredFiles()) {
-      for (let fileUrl of this.resolver.deferredFiles.keys()) {
+    if (this.loader.hasDeferredFiles()) {
+      for (let fileUrl of this.loader.deferredFiles.keys()) {
         logger.error(`${fileUrl} never loaded`);
       }
-      done(new Error(`${this.resolver.deferredFiles.size} deferred files were never loaded`));
+      done(new Error(`${this.loader.deferredFiles.size} deferred files were never loaded`));
       return;
     }
     // Resolve our dependency analysis promise now that we have seen all files
@@ -169,7 +170,7 @@ export class StreamAnalyzer extends Transform {
   }
 
   /**
-   * A side-channel to add files to the resolver that did not come throgh the
+   * A side-channel to add files to the loader that did not come throgh the
    * stream transformation. This is for generated files, like
    * shared-bundle.html. This should probably be refactored so that the files
    * can be injected into the stream.
@@ -186,11 +187,15 @@ export class StreamAnalyzer extends Transform {
   /**
    * Attempts to retreive document-order transitive dependencies for `url`.
    */
-  _getDependencies(url: string): Promise<DocumentDeps> {
+  async _getDependencies(url: string): Promise<DocumentDeps> {
     let dir = path.posix.dirname(url);
 
-    return this.analyzer.metadataTree(url)
-        .then((tree) => getDependenciesFromDocument(tree, dir));
+    let doc = await this.analyzer.analyzeRoot(url);
+    console.log(doc);
+    console.log(doc.getWarnings().map(x => x.sourceRange));
+    let byKind = doc.getByKind('import');
+    console.log(byKind);
+        // .then((tree) => getDependenciesFromDocument(tree, dir));
   }
 
   _addDependencies(filePath: string, deps: DocumentDeps) {
@@ -238,7 +243,7 @@ export class StreamAnalyzer extends Transform {
   }
 }
 
-export class StreamResolver implements Resolver {
+export class StreamLoader implements UrlLoader {
 
   root: string;
   analyzer: StreamAnalyzer;
@@ -263,15 +268,19 @@ export class StreamResolver implements Resolver {
     this.deferredFiles.delete(filePath);
   }
 
-  accept(url: string, deferred: Deferred<string>): boolean {
-    logger.debug(`accept: ${url}`);
+  canLoad(url: string): boolean {
+    // TODO: seriously? When should we not load / fail?
+    return true;
+  }
+
+  load(url: string): Promise<string> {
+    logger.debug(`loading: ${url}`);
     let urlObject = parseUrl(url);
 
     // Resolve external files as empty strings. We filter these out later
     // in the analysis process to make sure they aren't included in the build.
     if (isDependencyExternal(url)) {
-      deferred.resolve('');
-      return true;
+      return Promise.resolve('');
     }
 
     let urlPath = decodeURIComponent(urlObject.pathname);
@@ -279,12 +288,13 @@ export class StreamResolver implements Resolver {
     let file = this.analyzer.getFile(filePath);
 
     if (file) {
-      deferred.resolve(file.contents.toString());
-    } else {
-      this.deferredFiles.set(filePath, deferred);
-      this.analyzer.pushDependency(urlPath);
+      return Promise.resolve(file.contents.toString());
     }
 
-    return true;
+    const deferred = new Promise();
+    this.deferredFiles.set(filePath, deferred);
+    this.analyzer.pushDependency(urlPath);
+    return deferred;
   }
+
 }
