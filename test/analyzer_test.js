@@ -20,7 +20,7 @@ suite('Analyzer', () => {
 
   suite('DepsIndex', () => {
 
-    test.only('fragment to deps list has only uniques', (done) => {
+    test('fragment to deps list has only uniques', (done) => {
       let root = path.resolve('test/analyzer-data');
       let fragments = [
         path.resolve(root, 'a.html'),

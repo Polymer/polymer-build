@@ -81,7 +81,9 @@ export class Bundler extends Transform {
   }
 
   _flush(done: (error?: any) => void) {
+    console.log('CALLED FLUSH');
     this._buildBundles().then((bundles: Map<string, string>) => {
+      console.log('BUNDLES BUILT 2');
       for (let fragment of this.allFragments) {
         let file = this.analyzer.getFile(fragment);
         console.assert(file != null);
@@ -106,6 +108,7 @@ export class Bundler extends Transform {
 
   _buildBundles(): Promise<Map<string, string>> {
     return this._getBundles().then((bundles) => {
+      console.log('BUNDLES BUILT 1');
       let sharedDepsBundle = (this.shell)
           ? urlFromPath(this.root, this.shell)
           : this.sharedBundleUrl;
@@ -129,9 +132,10 @@ export class Bundler extends Transform {
             : sharedDeps.concat(sharedDepsBundle);
 
         promises.push(new Promise((resolve, reject) => {
+          console.log('I"M A PROMISE', fragmentUrl);
           let vulcanize = new Vulcanize({
             abspath: null,
-            fsResolver: this.analyzer.resolver,
+            fsResolver: this.analyzer.loader,
             addedImports: addedImports,
             stripExcludes: excludes,
             inlineScripts: true,
@@ -139,7 +143,9 @@ export class Bundler extends Transform {
             inputUrl: fragmentUrl,
           });
           vulcanize.process(null, (err: any, doc: string) => {
+            console.log('PROMISE DONE!', fragmentUrl);
             if (err) {
+              console.log(err);
               reject(err);
             } else {
               resolve({
@@ -155,7 +161,9 @@ export class Bundler extends Transform {
         logger.info(`generating shared bundle...`);
         promises.push(this._generateSharedBundle(sharedDeps));
       }
+      console.log('NO ERROR YET! 1');
       return Promise.all(promises).then((bundles) => {
+        console.log('NO ERROR YET! 2');
         // TODO(justinfagnani): remove at TypeScript 2.0
         let _bundles = <any[]>bundles;
         // convert {url,contents}[] into a Map
@@ -235,7 +243,7 @@ export class Bundler extends Transform {
 
       let vulcanize = new Vulcanize({
         abspath: null,
-        fsResolver: this.analyzer.resolver,
+        fsResolver: this.analyzer.loader,
         inlineScripts: true,
         inlineCss: true,
         inputUrl: this.sharedBundleUrl,

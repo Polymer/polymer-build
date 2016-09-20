@@ -9,9 +9,8 @@
  */
 
 import * as fs from 'fs';
-// import {Analyzer, Deferred, Loader, Resolver, DocumentDescriptor}
-//   from 'hydrolysis';
-import {Analyzer, UrlLoader} from 'polymer-analyzer';
+import {Deferred} from 'hydrolysis';
+import {Analyzer, UrlLoader, Document} from 'polymer-analyzer';
 import * as path from 'path';
 import {PassThrough, Transform} from 'stream';
 import File = require('vinyl');
@@ -21,11 +20,18 @@ import {Node, queryAll, predicates, getAttribute} from 'dom5';
 
 import {FileCB, VinylReaderTransform} from './streams';
 import {urlFromPath, pathFromUrl} from './path-transformers';
-import {DocumentDeps, getDependenciesFromDocument, isDependencyExternal}
+import {getDependenciesFromDocument, isDependencyExternal}
   from './get-dependencies-from-document';
 
 const minimatchAll = require('minimatch-all');
 const logger = logging.getLogger('cli.build.analyzer');
+logging.setVerbose();
+
+export interface DocumentDeps {
+  imports?: Array<string>;
+  scripts?: Array<string>;
+  styles?: Array<string>;
+}
 
 export interface DepsIndex {
   // An index of dependency -> fragments that depend on it
@@ -112,11 +118,12 @@ export class StreamAnalyzer extends Transform {
     return this._dependenciesProcessingStream;
   }
 
-  _transform(file: File, encoding: string, callback: FileCB): void {
+  async _transform(file: File, encoding: string, callback: FileCB): void {
     let filePath = file.path;
     this.addFile(file);
 
     // If our resolver is waiting for this file, resolve its deferred loader
+    console.log('wahhh', filePath, this.loader.hasDeferredFile(filePath));
     if (this.loader.hasDeferredFile(filePath)) {
       this.loader.resolveDeferredFile(filePath, file);
     }
@@ -128,25 +135,21 @@ export class StreamAnalyzer extends Transform {
     // If the file is a fragment, begin analysis on its dependencies
     if (this.isFragment(file)) {
       console.log(`this.allFragmentsToAnalyze.size ${this.allFragmentsToAnalyze.size}`);
-
-      this._getDependencies(urlFromPath(this.root, filePath))
-        .then((deps: DocumentDeps) => {
-          try {
-            console.log('hEY!');
-            // Add all found dependencies to our index
-            this._addDependencies(filePath, deps);
-            console.log('2');
-            this.allFragmentsToAnalyze.delete(filePath);
-            console.log('3');
-            // If there are no more fragments to analyze, close the dependency stream
-            if (this.allFragmentsToAnalyze.size === 0) {
-              this._dependenciesStream.end();
-            }
-          }
-          catch (e) {
-            console.log(e);
-          }
-        });
+      try {
+        let deps = await this._getDependencies(urlFromPath(this.root, filePath));
+        // Add all found dependencies to our index
+        this._addDependencies(filePath, deps);
+        this.allFragmentsToAnalyze.delete(filePath);
+        // If there are no more fragments to analyze, close the dependency stream
+        console.log('this.allFragmentsToAnalyze.size', this.allFragmentsToAnalyze.size);
+        if (this.allFragmentsToAnalyze.size === 0) {
+          this._dependenciesStream.end();
+        }
+      }
+      catch (e) {
+        console.log('AAA');
+        console.log(e);
+      }
     }
   }
 
@@ -199,14 +202,37 @@ export class StreamAnalyzer extends Transform {
    * Attempts to retreive document-order transitive dependencies for `url`.
    */
   async _getDependencies(url: string): Promise<DocumentDeps> {
-    let dir = path.posix.dirname(url);
+    let deps = {};
+    console.log('lets begin: ', url);
 
-    let doc = await this.analyzer.analyzeRoot(url);
-    // console.log(doc);
-    // console.log(doc.getWarnings().map(x => x.sourceRange));
-    let byKind = doc.getByKind('import');
-    // console.log(byKind);
-        // .then((tree) => getDependenciesFromDocument(tree, dir));
+      let doc = await this.analyzer.analyzeRoot(url);
+      // TODO(fks): Filter these appropriate
+      const imports = Array.from(doc.getByKind('import')).filter((i) => !isDependencyExternal(i.url));
+      console.log(imports.map((i) => [i.url, i.type]));
+      deps.scripts = Array.from(new Set(imports.filter((i) => i.type == 'html-script').map((i) => i.url)));
+      deps.styles = Array.from(new Set(imports.filter((i) => i.type == 'html-style').map((i) => i.url)));
+      deps.imports = Array.from(new Set(imports.filter((i) => i.type == 'html-import').map((i) => i.url)));
+      console.log(deps);
+      // let allImports = doc.getByKind('html-document');
+      // let allImports = doc.getByKind('js-document');
+      // let allImports = doc.getByKind('css-document');
+      // deps.scripts = d
+      // console.log('\n' + doc.url);
+      // console.log('imports:', Array.from(doc.getByKind('html-document')).filter((s) => !s.isInline).map((s) => s.url));
+      // console.log('scripts:', Array.from(doc.getByKind('js-document')).filter((s) => !s.isInline).map((s) => s.url));
+      // console.log('styles:', Array.from(doc.getByKind('css-document')).filter((s) => !s.isInline).map((s) => s.url));
+    //   for (let dep of deps) {
+    //     if (dep.isInline) {
+    //       console.log('delete:', dep.url);
+    //       deps.delete(dep);
+    //     }
+    //   }
+    // } catch (e) {
+    //   console.log('BBB');
+    //   console.log(e);
+    // }
+
+    return deps;
   }
 
   _addDependencies(filePath: string, deps: DocumentDeps) {
@@ -284,7 +310,6 @@ export class StreamLoader implements UrlLoader {
   }
 
   load(url: string): Promise<string> {
-    console.log(`loading: ${url}`);
     logger.debug(`loading: ${url}`);
     let urlObject = parseUrl(url);
 
@@ -298,7 +323,7 @@ export class StreamLoader implements UrlLoader {
     let filePath = pathFromUrl(this.root, urlPath);
     let file = this.analyzer.getFile(filePath);
 
-    console.log(`file: ${filePath}`);
+    console.log(`file: ${filePath} ${!!file}`);
     if (file) {
       return Promise.resolve(file.contents.toString());
     }
@@ -311,6 +336,15 @@ export class StreamLoader implements UrlLoader {
     this.deferredFiles.set(filePath, callback);
     this.analyzer.pushDependency(urlPath);
     return waitForFile;
+  }
+
+
+  accept(url: string, deferred: Deferred<string>): boolean {
+    this.load(url).then((fileContents) => {
+      console.log(fileContents);
+      deferred.resolve(fileContents);
+    });
+    return true;
   }
 
 }

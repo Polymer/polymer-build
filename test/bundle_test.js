@@ -64,6 +64,7 @@ suite('Bundler', () => {
       .pipe(analyzer)
       .pipe(bundler);
     files = new Map();
+    analyzer.on('end', () => console.log('ACTUALLY DONE!'));
     bundledStream.on('data', (file) => {
       files.set(file.path, file);
     });
@@ -74,6 +75,7 @@ suite('Bundler', () => {
       reject(err);
     });
     pushFiles(options.files);
+    console.log('WOOOAHH');
   });
 
   teardown(() => {
@@ -117,6 +119,7 @@ suite('Bundler', () => {
     entrypoint: 'entrypointA.html',
     files: [framework(), entrypointA()],
   }).then((files) => {
+    console.log('IM DONE');
     let doc = dom5.parse(getFile('entrypointA.html'));
     assert.isTrue(hasMarker(doc, 'framework'));
     assert.isFalse(hasImport(doc, 'framework.html'));
