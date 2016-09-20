@@ -28,7 +28,7 @@ suite('Analyzer', () => {
       ];
       let analyzer = new StreamAnalyzer(root, null, null, fragments, fragments);
       mergeStream(
-          vfs.src(path.join(root, '**'), {cwdbase: true}),
+          vfs.src(fragments, {cwdbase: true}),
           analyzer.dependencies
         )
         .pipe(analyzer)

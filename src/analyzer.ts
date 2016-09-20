@@ -124,16 +124,27 @@ export class StreamAnalyzer extends Transform {
     // Propagate the file so that the stream can continue
     callback(null, file);
 
+    console.log(`file ${filePath} isFragment? ${this.isFragment(file)}`);
     // If the file is a fragment, begin analysis on its dependencies
     if (this.isFragment(file)) {
+      console.log(`this.allFragmentsToAnalyze.size ${this.allFragmentsToAnalyze.size}`);
+
       this._getDependencies(urlFromPath(this.root, filePath))
         .then((deps: DocumentDeps) => {
-          // Add all found dependencies to our index
-          this._addDependencies(filePath, deps);
-          this.allFragmentsToAnalyze.delete(filePath);
-          // If there are no more fragments to analyze, close the dependency stream
-          if (this.allFragmentsToAnalyze.size === 0) {
-            this._dependenciesStream.end();
+          try {
+            console.log('hEY!');
+            // Add all found dependencies to our index
+            this._addDependencies(filePath, deps);
+            console.log('2');
+            this.allFragmentsToAnalyze.delete(filePath);
+            console.log('3');
+            // If there are no more fragments to analyze, close the dependency stream
+            if (this.allFragmentsToAnalyze.size === 0) {
+              this._dependenciesStream.end();
+            }
+          }
+          catch (e) {
+            console.log(e);
           }
         });
     }
@@ -191,10 +202,10 @@ export class StreamAnalyzer extends Transform {
     let dir = path.posix.dirname(url);
 
     let doc = await this.analyzer.analyzeRoot(url);
-    console.log(doc);
-    console.log(doc.getWarnings().map(x => x.sourceRange));
+    // console.log(doc);
+    // console.log(doc.getWarnings().map(x => x.sourceRange));
     let byKind = doc.getByKind('import');
-    console.log(byKind);
+    // console.log(byKind);
         // .then((tree) => getDependenciesFromDocument(tree, dir));
   }
 
@@ -247,7 +258,7 @@ export class StreamLoader implements UrlLoader {
 
   root: string;
   analyzer: StreamAnalyzer;
-  deferredFiles = new Map<string, Deferred<string>>();
+  deferredFiles = new Map<string, (a: string) => string>();
 
   constructor(analyzer: StreamAnalyzer) {
     this.analyzer = analyzer;
@@ -263,8 +274,7 @@ export class StreamLoader implements UrlLoader {
   }
 
   resolveDeferredFile(filePath: string, file: File): void {
-    let deferred = this.deferredFiles.get(filePath);
-    deferred.resolve(file.contents.toString());
+    this.deferredFiles.get(filePath)(file.contents.toString());
     this.deferredFiles.delete(filePath);
   }
 
@@ -274,6 +284,7 @@ export class StreamLoader implements UrlLoader {
   }
 
   load(url: string): Promise<string> {
+    console.log(`loading: ${url}`);
     logger.debug(`loading: ${url}`);
     let urlObject = parseUrl(url);
 
@@ -287,14 +298,19 @@ export class StreamLoader implements UrlLoader {
     let filePath = pathFromUrl(this.root, urlPath);
     let file = this.analyzer.getFile(filePath);
 
+    console.log(`file: ${filePath}`);
     if (file) {
       return Promise.resolve(file.contents.toString());
     }
 
-    const deferred = new Promise();
-    this.deferredFiles.set(filePath, deferred);
+    let callback: (a: string) => string;
+    const waitForFile: Promise<string> =
+        new Promise((resolve: (a: string) => string, reject: () => any) => {
+          callback = resolve;
+        });
+    this.deferredFiles.set(filePath, callback);
     this.analyzer.pushDependency(urlPath);
-    return deferred;
+    return waitForFile;
   }
 
 }

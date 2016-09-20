@@ -35,11 +35,11 @@
     "src/bundle.ts",
     "src/fork-stream.ts",
     "src/get-dependencies-from-document.ts",
+    "src/path-transformers.ts",
     "src/polymer-build.ts",
     "src/polymer-project.ts",
-    "src/streams.ts",
     "src/service-worker.ts",
-    "src/path-transformers.ts",
+    "src/streams.ts",
     "typings/index.d.ts"
   ],
   "atom": {
