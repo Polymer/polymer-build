@@ -9,7 +9,6 @@
  */
 
 import * as dom5 from 'dom5';
-import * as gulpif from 'gulp-if';
 import * as path from 'path';
 import {posix as posixPath} from 'path';
 import {Transform} from 'stream';

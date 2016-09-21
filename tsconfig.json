@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "es6",
+    "lib": ["es2016"],
     "module": "commonjs",
     "moduleResolution": "node",
     "isolatedModules": false,
@@ -12,10 +13,6 @@
     "outDir": "lib",
     "rootDir": "src"
   },
-  "files": [
-    "node_modules/typescript/lib/lib.es2016.d.ts",
-    "typings/index.d.ts"
-  ],
   "include": [
     "custom_typings/**/*.ts",
     "src/**/*.ts"
