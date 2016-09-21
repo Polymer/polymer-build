@@ -66,7 +66,7 @@ suite('service-worker', () => {
     test('should throw when options are not provided', () => {
       return serviceWorker.generateServiceWorker()
         .then(
-          () => { throw new Error('generateServiceWorker() resolved, expected rejection!'); },
+          () => { assert.fail('generateServiceWorker() resolved, expected rejection!'); },
           (error) => {
             assert.equal(error.name, 'AssertionError');
             assert.equal(error.message, '`project` & `buildRoot` options are required');
@@ -77,7 +77,7 @@ suite('service-worker', () => {
     test('should throw when options.project is not provided', () => {
       return serviceWorker.generateServiceWorker({buildRoot: testBuildRoot})
         .then(
-          () => { throw new Error('generateServiceWorker() resolved, expected rejection!'); },
+          () => { assert.fail('generateServiceWorker() resolved, expected rejection!'); },
           (error) => {
             assert.equal(error.name, 'AssertionError');
             assert.equal(error.message, '`project` option is required');
@@ -88,7 +88,7 @@ suite('service-worker', () => {
     test('should throw when options.buildRoot is not provided', () => {
       return serviceWorker.generateServiceWorker({project: defaultProject})
         .then(
-          () => { throw new Error('generateServiceWorker() resolved, expected rejection!'); },
+          () => { assert.fail('generateServiceWorker() resolved, expected rejection!'); },
           (error) => {
             assert.equal(error.name, 'AssertionError');
             assert.equal(error.message, '`buildRoot` option is required');
