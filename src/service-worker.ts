@@ -8,11 +8,14 @@
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
 
+/// <reference path="../custom_typings/sw-precache.d.ts" />
+
 import {writeFile} from 'fs';
 import * as path from 'path';
 import * as logging from 'plylog';
 import {PolymerProject} from './polymer-project';
 import {DepsIndex} from './analyzer';
+
 import {SWConfig, generate as swPrecacheGenerate} from 'sw-precache';
 
 let logger = logging.getLogger('polymer-build.service-worker');
