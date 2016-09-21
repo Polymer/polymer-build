@@ -23,22 +23,9 @@ const tslint = require('gulp-tslint');
 const typescript = require('gulp-typescript');
 const typings = require('gulp-typings');
 
-const tsProject = typescript.createProject('tsconfig.json');
-
-// WTF gulp-typescript
-class Rebase extends stream.Transform {
-  constructor() {
-    super({objectMode: true});
-  }
-
-  _transform(file, enc, callback) {
-    let oldPath = file.path;
-    if (oldPath.startsWith('lib/src')) {
-      file.path = 'lib' + oldPath.substring('lib/src'.length);
-    }
-    callback(null, file);
-  }
-}
+const tsProject = typescript.createProject('tsconfig.json', {
+    typescript: require('typescript')
+});
 
 gulp.task('init', () => gulp.src("./typings.json").pipe(typings()));
 
@@ -47,7 +34,6 @@ gulp.task('lint', ['tslint', 'eslint', 'depcheck']);
 gulp.task('build', () =>
   tsProject.src()
     .pipe(typescript(tsProject))
-    .pipe(new Rebase())
     .pipe(gulp.dest('lib'))
 );
 
@@ -71,8 +57,9 @@ gulp.task('tslint', () =>
   gulp.src('src/**/*.ts')
     .pipe(tslint({
       configuration: 'tslint.json',
+      formatter: 'verbose'
     }))
-    .pipe(tslint.report('verbose')));
+    .pipe(tslint.report()));
 
 gulp.task('eslint', () =>
   gulp.src('test/**/*.js')

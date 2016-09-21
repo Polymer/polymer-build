@@ -9,24 +9,16 @@
     "declaration": true,
     "noImplicitAny": true,
     "removeComments": false,
-    "noLib": true,
     "preserveConstEnums": true,
     "suppressImplicitAnyIndexErrors": false,
     "outDir": "lib",
     "rootDir": "src"
   },
-  "filesGlob": [
-    "node_modules/typescript/lib/lib.core.es7.d.ts",
-    "custom_typings/*.d.ts",
-    "src/**/*.ts",
-    "typings/index.d.ts"
-  ],
   "files": [
-    "node_modules/typescript/lib/lib.core.es7.d.ts",
+    "node_modules/typescript/lib/lib.es2016.d.ts",
     "custom_typings/dom5.d.ts",
     "custom_typings/fs-extra.d.ts",
     "custom_typings/hydrolysis.d.ts",
-    "custom_typings/node.d.ts",
     "custom_typings/plylog.d.ts",
     "custom_typings/slash.d.ts",
     "custom_typings/sw-precache.d.ts",
@@ -41,8 +33,5 @@
     "src/service-worker.ts",
     "src/path-transformers.ts",
     "typings/index.d.ts"
-  ],
-  "atom": {
-    "rewriteTsconfig": true
-  }
+  ]
 }
