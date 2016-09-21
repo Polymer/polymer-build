@@ -68,7 +68,7 @@ gulp.task('eslint', () =>
     .pipe(eslint.failAfterError()));
 
 gulp.task('depcheck', () =>
-  depcheck(__dirname, {})
+  depcheck(__dirname, {ignoreMatches: ['@types/**']})
     .then((result) => {
       let invalidFiles = Object.keys(result.invalidFiles) || [];
       let invalidJsFiles = invalidFiles.filter((f) => f.endsWith('.js'));
