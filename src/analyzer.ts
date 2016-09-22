@@ -313,6 +313,8 @@ export class StreamLoader implements BackwardsCompatibleUrlLoader {
   }
 
   canLoad(url: string): boolean {
+    // We want to return true for all files. Even external files, so that we
+    // can resolve them as empty strings for now.
     return true;
   }
 
