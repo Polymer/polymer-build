@@ -127,7 +127,7 @@ export class StreamAnalyzer extends Transform {
     return this._dependenciesProcessingStream;
   }
 
-  async _transform(file: File, encoding: string, callback: FileCB): Promise<void> {
+  _transform(file: File, encoding: string, callback: FileCB): void {
     let filePath = file.path;
     this.addFile(file);
 
@@ -141,14 +141,16 @@ export class StreamAnalyzer extends Transform {
 
     // If the file is a fragment, begin analysis on its dependencies
     if (this.isFragment(file)) {
-      const deps = await this._getDependencies(urlFromPath(this.root, filePath));
-      // Add all found dependencies to our index
-      this._addDependencies(filePath, deps);
-      this.allFragmentsToAnalyze.delete(filePath);
-      // If there are no more fragments to analyze, close the dependency stream
-      if (this.allFragmentsToAnalyze.size === 0) {
-        this._dependenciesStream.end();
-      }
+      (async () => {
+        const deps = await this._getDependencies(urlFromPath(this.root, filePath));
+        // Add all found dependencies to our index
+        this._addDependencies(filePath, deps);
+        this.allFragmentsToAnalyze.delete(filePath);
+        // If there are no more fragments to analyze, close the dependency stream
+        if (this.allFragmentsToAnalyze.size === 0) {
+          this._dependenciesStream.end();
+        }
+      })();
     }
   }
 
