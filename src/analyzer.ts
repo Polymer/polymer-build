@@ -352,8 +352,11 @@ export class StreamLoader implements BackwardsCompatibleUrlLoader {
    * hydrolosis to polymer-analyzer is complete.
    */
   accept(url: string, deferred: Deferred<string>): boolean {
-    this.load(url).then(deferred.resolve);
-    return true;
+    if (this.canLoad(url)) {
+      this.load(url).then(deferred.resolve);
+      return true;
+    }
+    return false;
   }
 
 }
