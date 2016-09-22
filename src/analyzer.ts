@@ -281,11 +281,17 @@ export class StreamAnalyzer extends Transform {
 export interface BackwardsCompatibleUrlLoader
   extends UrlLoader, HydrolysisResolver {};
 
+export type DeferredFileCallback = (a: string) => string;
+
 export class StreamLoader implements BackwardsCompatibleUrlLoader {
 
   root: string;
   analyzer: StreamAnalyzer;
-  deferredFiles = new Map<string, (a: string) => string>();
+
+  // Store files that have not yet entered the Analyzer stream here.
+  // Later, when the file is seen, the DeferredFileCallback can be
+  // called with the file contents to resolve its loading.
+  deferredFiles = new Map<string, DeferredFileCallback>();
 
   constructor(analyzer: StreamAnalyzer) {
     this.analyzer = analyzer;
@@ -312,7 +318,7 @@ export class StreamLoader implements BackwardsCompatibleUrlLoader {
 
   load(url: string): Promise<string> {
     logger.debug(`loading: ${url}`);
-    let urlObject = parseUrl(url);
+    const urlObject = parseUrl(url);
 
     // Resolve external files as empty strings. We filter these out later
     // in the analysis process to make sure they aren't included in the build.
@@ -320,19 +326,19 @@ export class StreamLoader implements BackwardsCompatibleUrlLoader {
       return Promise.resolve('');
     }
 
-    let urlPath = decodeURIComponent(urlObject.pathname);
-    let filePath = pathFromUrl(this.root, urlPath);
-    let file = this.analyzer.getFile(filePath);
+    const urlPath = decodeURIComponent(urlObject.pathname);
+    const filePath = pathFromUrl(this.root, urlPath);
+    const file = this.analyzer.getFile(filePath);
 
     if (file) {
       return Promise.resolve(file.contents.toString());
     }
 
-    type Callback = (a: string) => string;
-    let callback: Callback;
-    const waitForFile = new Promise((resolve: Callback, reject: () => any) => {
-      callback = resolve;
-    });
+    let callback: DeferredFileCallback;
+    const waitForFile =
+      new Promise((resolve: DeferredFileCallback, reject: () => any) => {
+        callback = resolve;
+      });
     this.deferredFiles.set(filePath, callback);
     this.analyzer.pushDependency(urlPath);
     return waitForFile;
