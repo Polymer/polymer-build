@@ -219,7 +219,7 @@ export class StreamAnalyzer extends Transform {
       } else if (importDep.type === 'html-import') {
         imports.add(importUrl);
       } else {
-        logger.warn(`unexpected import type encountered: ${importDep.type}`);
+        logger.debug(`unexpected import type encountered: ${importDep.type}`);
       }
     }
 
