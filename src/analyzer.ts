@@ -27,9 +27,9 @@ const minimatchAll = require('minimatch-all');
 const logger = logging.getLogger('cli.build.analyzer');
 
 export interface DocumentDeps {
-  imports?: Array<string>;
-  scripts?: Array<string>;
-  styles?: Array<string>;
+  imports: Array<string>;
+  scripts: Array<string>;
+  styles: Array<string>;
 }
 
 export interface DepsIndex {
