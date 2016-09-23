@@ -8,17 +8,14 @@
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
 
-import * as fs from 'fs';
 import {Deferred, Resolver as HydrolysisResolver} from 'hydrolysis';
 import {Analyzer} from 'polymer-analyzer';
 import {UrlLoader} from 'polymer-analyzer/lib/url-loader/url-loader';
-import {Import} from 'polymer-analyzer/lib/model/import';
 import * as path from 'path';
 import {PassThrough, Transform} from 'stream';
 import File = require('vinyl');
 import {parse as parseUrl} from 'url';
 import * as logging from 'plylog';
-import {Node, queryAll, predicates, getAttribute} from 'dom5';
 
 import {FileCB, VinylReaderTransform} from './streams';
 import {urlFromPath, pathFromUrl} from './path-transformers';

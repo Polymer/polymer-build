@@ -8,7 +8,7 @@
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
 
-import {PassThrough, Readable, Transform} from 'stream';
+import {PassThrough, Transform} from 'stream';
 import File = require('vinyl');
 import * as fs from 'fs';
 

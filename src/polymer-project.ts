@@ -304,10 +304,7 @@ class HtmlSplitter extends Transform {
       try {
         const contents = file.contents.toString();
         const doc = dom5.parse(contents);
-        const body = dom5.query(doc, pred.hasTagName('body'));
-        const head = dom5.query(doc, pred.hasTagName('head'));
         const scriptTags = dom5.queryAll(doc, HtmlSplitter.isInlineScript);
-        const styleTags = dom5.queryAll(doc, pred.hasTagName('style'));
 
         // const scripts = [];
         // const styles = [];
@@ -400,10 +397,7 @@ class HtmlRejoiner extends Transform {
     const filePath = osPath.normalize(file.path);
     const contents = file.contents.toString();
     const doc = dom5.parse(contents);
-    const body = dom5.query(doc, pred.hasTagName('body'));
-    const head = dom5.query(doc, pred.hasTagName('head'));
     const scriptTags = dom5.queryAll(doc, HtmlRejoiner.isExternalScript);
-    const styleTags = dom5.queryAll(doc, pred.hasTagName('style'));
 
     for (let i = 0; i < scriptTags.length; i++) {
       const scriptTag = scriptTags[i];
