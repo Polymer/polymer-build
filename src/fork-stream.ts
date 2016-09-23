@@ -29,7 +29,7 @@ export class ForkedVinylStream extends Transform {
     super({objectMode: true});
   }
 
-  _transform(file: File, enc: string, callback: FileCB) {
+  _transform(file: File, _encoding: string, callback: FileCB) {
     callback(null, file.clone({deep: true, contents: true}));
   }
 }

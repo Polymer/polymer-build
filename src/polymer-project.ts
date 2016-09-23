@@ -298,7 +298,7 @@ class HtmlSplitter extends Transform {
     this._project = project;
   }
 
-  _transform(file: File, encoding: string, callback: FileCB): void {
+  _transform(file: File, _encoding: string, callback: FileCB): void {
     const filePath = osPath.normalize(file.path);
     if (file.contents && filePath.endsWith('.html')) {
       try {
@@ -364,7 +364,7 @@ class HtmlRejoiner extends Transform {
     this._project = project;
   }
 
-  _transform(file: File, encoding: string, callback: FileCB): void {
+  _transform(file: File, _encoding: string, callback: FileCB): void {
     const filePath = osPath.normalize(file.path);
     if (this._project.isSplitFile(filePath)) {
       // this is a parent file

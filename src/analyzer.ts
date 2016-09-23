@@ -109,7 +109,7 @@ export class StreamAnalyzer extends Transform {
     this._dependenciesStream.pipe(this._dependenciesProcessingStream);
 
     this.allFragmentsToAnalyze = new Set(this.allFragments);
-    this.analyzeDependencies = new Promise((resolve, reject) => {
+    this.analyzeDependencies = new Promise((resolve, _reject) => {
       this._resolveDependencyAnalysis = resolve;
     });
   }
@@ -124,7 +124,7 @@ export class StreamAnalyzer extends Transform {
     return this._dependenciesProcessingStream;
   }
 
-  _transform(file: File, encoding: string, callback: FileCB): void {
+  _transform(file: File, _encoding: string, callback: FileCB): void {
     const filePath = file.path;
     this.addFile(file);
 
@@ -309,7 +309,7 @@ export class StreamLoader implements BackwardsCompatibleUrlLoader {
     this.deferredFiles.delete(filePath);
   }
 
-  canLoad(url: string): boolean {
+  canLoad(_url: string): boolean {
     // We want to return true for all files. Even external files, so that we
     // can resolve them as empty strings for now.
     return true;
@@ -335,7 +335,7 @@ export class StreamLoader implements BackwardsCompatibleUrlLoader {
 
     let callback: DeferredFileCallback;
     const waitForFile =
-      new Promise((resolve: DeferredFileCallback, reject: () => any) => {
+      new Promise((resolve: DeferredFileCallback, _reject: () => any) => {
         callback = resolve;
       });
     this.deferredFiles.set(filePath, callback);
