@@ -144,4 +144,55 @@ suite('Analyzer', () => {
     });
   });
 
+  test('the analyzer stream will emit an error when one occurs during analysis', () => {
+    const root = path.resolve('test/static/project-analysis-error');
+    const sourceFiles = path.join(root, '**');
+    const config = new ProjectConfig({
+      root: root,
+      sources: [sourceFiles],
+    });
+    const analyzer = new StreamAnalyzer(config);
+
+    return new Promise((resolve, reject) => {
+      mergeStream(
+          vfs.src(sourceFiles, {cwdbase: true}),
+          analyzer.dependencies
+        )
+        .pipe(analyzer)
+        .on('error', reject)
+        .on('finish', resolve);
+    }).then(
+      () => {
+        throw new Error('Parse error expected!');
+      },
+      (err) => {
+        assert.isDefined(err);
+        assert.equal(err.message, 'In index.html: [parse-error] - Unexpected token <');
+      }
+    );
+  });
+
+  // TODO(fks) 09-26-2016: The behavior of _getDependencies() will most likely
+  // change once vulcanize is converted to polymer-bunder. Hold off on implementing
+  // these tests until that work has been done.
+  suite.skip('_getDependencies()', () => {
+
+    test('will print warnings when analysis returns them', () => {
+      throw new Error('Not yet implemented');
+    });
+
+    test('will print a warning when analysis rejects with a WarningCarryingException', () => {
+      throw new Error('Not yet implemented');
+    });
+
+    test('will throw when a found warning has ERROR severity', () => {
+      throw new Error('Not yet implemented');
+    });
+
+    test('will resolve when no found warnings have ERROR severity', () => {
+      throw new Error('Not yet implemented');
+    });
+
+  });
+
 });

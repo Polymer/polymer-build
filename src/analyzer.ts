@@ -11,6 +11,9 @@
 import {Deferred, Resolver as HydrolysisResolver} from 'hydrolysis';
 import {Analyzer} from 'polymer-analyzer';
 import {UrlLoader} from 'polymer-analyzer/lib/url-loader/url-loader';
+import {Warning, Severity, WarningCarryingException} from 'polymer-analyzer/lib/warning/warning';
+import {Document} from 'polymer-analyzer/lib/model/model';
+
 import * as path from 'path';
 import {PassThrough, Transform} from 'stream';
 import File = require('vinyl');
@@ -50,6 +53,14 @@ function isDependencyExternal(url: string) {
   // TODO(fks) 08-01-2016: Add additional check for files on current hostname
   // but external to this application root. Ignore them.
   return parseUrl(url).protocol !== null || url.startsWith('//');
+}
+
+/**
+ * Get a longer, single-line error message for logging and exeption-handling
+ * analysis Warning objects.
+ */
+function getFullWarningMessage(warning: Warning): string {
+  return `In ${warning.sourceRange.file}: [${warning.code}] - ${warning.message}`;
 }
 
 export class StreamAnalyzer extends Transform {
@@ -119,13 +130,18 @@ export class StreamAnalyzer extends Transform {
     // If the file is a fragment, begin analysis on its dependencies
     if (this.config.isFragment(file.path)) {
       (async () => {
-        const deps = await this._getDependencies(urlFromPath(this.config.root, filePath));
-        // Add all found dependencies to our index
-        this._addDependencies(filePath, deps);
-        this.allFragmentsToAnalyze.delete(filePath);
-        // If there are no more fragments to analyze, close the dependency stream
-        if (this.allFragmentsToAnalyze.size === 0) {
-          this._dependenciesStream.end();
+        try {
+          const deps = await this._getDependencies(urlFromPath(this.config.root, filePath));
+          this._addDependencies(filePath, deps);
+          this.allFragmentsToAnalyze.delete(filePath);
+          // If there are no more fragments to analyze, close the dependency stream
+          if (this.allFragmentsToAnalyze.size === 0) {
+            this._dependenciesStream.end();
+          }
+        } catch (error) {
+          // Because we've already called the _transform callback, we need to
+          // propagate this error via an error on the analyzer stream itself.
+          this.emit('error', error);
         }
       })();
     }
@@ -172,11 +188,47 @@ export class StreamAnalyzer extends Transform {
     this.files.set(urlFromPath(this.config.root, filepath), file);
   }
 
+  private _printAnalysisWarnings(warnings: Warning[]): void {
+    for (const warning of warnings) {
+      let message = getFullWarningMessage(warning);
+      if (warning.severity === Severity.ERROR) {
+        logger.error(message);
+      } else if (warning.severity === Severity.WARNING) {
+        logger.warn(message);
+      } else {
+        logger.debug(message);
+      }
+    }
+  }
+
   /**
    * Attempts to retreive document-order transitive dependencies for `url`.
    */
   async _getDependencies(url: string): Promise<DocumentDeps> {
-    const doc = await this.analyzer.analyze(url);
+    let doc: Document;
+    let warnings: Warning[];
+
+    try {
+      doc = await this.analyzer.analyze(url);
+      warnings = doc.getWarnings();
+    } catch (err) {
+      if (err instanceof WarningCarryingException) {
+        warnings = [err.warning];
+      } else {
+        throw err;
+      }
+    }
+
+    if (warnings.length > 0) {
+      this._printAnalysisWarnings(warnings);
+    }
+
+    // If a serious error occurred, exit analysis
+    let errorWarning = warnings.find(w => w.severity === Severity.ERROR);
+    if (errorWarning) {
+      throw new Error(getFullWarningMessage(errorWarning));
+    }
+
     const scripts = new Set<string>();
     const styles = new Set<string>();
     const imports = new Set<string>();
