@@ -167,32 +167,17 @@ suite('Analyzer', () => {
       },
       (err) => {
         assert.isDefined(err);
-        assert.equal(err.message, 'In index.html: [parse-error] - Unexpected token <');
+        assert.equal(err.message, '1 errors occurred during build.');
       }
     );
   });
 
-  // TODO(fks) 09-26-2016: The behavior of _getDependencies() will most likely
-  // change once vulcanize is converted to polymer-bunder. Hold off on implementing
-  // these tests until that work has been done.
-  suite.skip('_getDependencies()', () => {
+  test('the analyzer stream will log all analysis warnings at the end of the stream', () => {
+    throw new Error('Not yet implemented');
+  });
 
-    test('will print warnings when analysis returns them', () => {
-      throw new Error('Not yet implemented');
-    });
-
-    test('will print a warning when analysis rejects with a WarningCarryingException', () => {
-      throw new Error('Not yet implemented');
-    });
-
-    test('will throw when a found warning has ERROR severity', () => {
-      throw new Error('Not yet implemented');
-    });
-
-    test('will resolve when no found warnings have ERROR severity', () => {
-      throw new Error('Not yet implemented');
-    });
-
+  test('the analyzer stream will emit an error when any analysis warning occurs with a severity of ERROR', () => {
+    throw new Error('Not yet implemented');
   });
 
 });

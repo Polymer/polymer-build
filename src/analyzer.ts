@@ -11,8 +11,7 @@
 import {Deferred, Resolver as HydrolysisResolver} from 'hydrolysis';
 import {Analyzer} from 'polymer-analyzer';
 import {UrlLoader} from 'polymer-analyzer/lib/url-loader/url-loader';
-import {Warning, Severity, WarningCarryingException} from 'polymer-analyzer/lib/warning/warning';
-import {Document} from 'polymer-analyzer/lib/model/model';
+import {Warning, Severity} from 'polymer-analyzer/lib/warning/warning';
 
 import * as path from 'path';
 import {PassThrough, Transform} from 'stream';
@@ -60,9 +59,9 @@ function isDependencyExternal(url: string) {
  * analysis Warning objects.
  *
  * Note: We cannot use WarningPrinter.printWarning() from the polymer-analyzer
- * codebase because it's reported source ranges don't match the users source
- * code after minification & optimization. We use this custom message
- * generator instead, that only includes the file name in the error message.
+ * codebase because after minification & optimization its reported source
+ * ranges don't match the original source code. Instead we use this custom
+ * message generator that only includes the file name in the error message.
  */
 function getFullWarningMessage(warning: Warning): string {
   return `In ${warning.sourceRange.file}: [${warning.code}] - ${warning.message}`;
@@ -79,6 +78,7 @@ export class StreamAnalyzer extends Transform {
   private _dependenciesProcessingStream = new VinylReaderTransform();
 
   files = new Map<string, File>();
+  warnings = new Set<Warning>();
   allFragmentsToAnalyze: Set<string>;
   foundDependencies = new Set<string>();
 
@@ -153,6 +153,15 @@ export class StreamAnalyzer extends Transform {
   }
 
   _flush(done: (error?: any) => void) {
+
+    this.printWarnings();
+    let allWarningCount = this.countWarningsByType();
+    let errorWarningCount = allWarningCount.get(Severity.ERROR);
+    if (errorWarningCount > 0) {
+      done(new Error(`${errorWarningCount} errors occurred during build.`));
+      return;
+    }
+
     // If stream finished with files that still needed to be loaded, error out
     if (this.loader.hasDeferredFiles()) {
       for (const fileUrl of this.loader.deferredFiles.keys()) {
@@ -193,8 +202,8 @@ export class StreamAnalyzer extends Transform {
     this.files.set(urlFromPath(this.config.root, filepath), file);
   }
 
-  private _printAnalysisWarnings(warnings: Warning[]): void {
-    for (const warning of warnings) {
+  printWarnings(): void {
+    for (const warning of this.warnings) {
       let message = getFullWarningMessage(warning);
       if (warning.severity === Severity.ERROR) {
         logger.error(message);
@@ -206,33 +215,25 @@ export class StreamAnalyzer extends Transform {
     }
   }
 
+  private countWarningsByType(): Map<Severity, number> {
+    let errorCountMap = new Map<Severity, number>();
+    errorCountMap.set(Severity.INFO, 0);
+    errorCountMap.set(Severity.WARNING, 0);
+    errorCountMap.set(Severity.ERROR, 0);
+    for (const warning of this.warnings) {
+      errorCountMap.set(warning.severity,errorCountMap.get(warning.severity) + 1);
+    }
+    return errorCountMap;
+  }
+
+
   /**
    * Attempts to retreive document-order transitive dependencies for `url`.
    */
   async _getDependencies(url: string): Promise<DocumentDeps> {
-    let doc: Document;
-    let warnings: Warning[];
+    const doc = await this.analyzer.analyze(url);
 
-    try {
-      doc = await this.analyzer.analyze(url);
-      warnings = doc.getWarnings();
-    } catch (err) {
-      if (err instanceof WarningCarryingException) {
-        warnings = [err.warning];
-      } else {
-        throw err;
-      }
-    }
-
-    if (warnings.length > 0) {
-      this._printAnalysisWarnings(warnings);
-    }
-
-    // If a serious error occurred, exit analysis
-    let errorWarning = warnings.find(w => w.severity === Severity.ERROR);
-    if (errorWarning) {
-      throw new Error(getFullWarningMessage(errorWarning));
-    }
+    doc.getWarnings(true).forEach(w => this.warnings.add(w));
 
     const scripts = new Set<string>();
     const styles = new Set<string>();
