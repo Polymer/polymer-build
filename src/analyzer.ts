@@ -58,6 +58,11 @@ function isDependencyExternal(url: string) {
 /**
  * Get a longer, single-line error message for logging and exeption-handling
  * analysis Warning objects.
+ *
+ * Note: We cannot use WarningPrinter.printWarning() from the polymer-analyzer
+ * codebase because it's reported source ranges don't match the users source
+ * code after minification & optimization. We use this custom message
+ * generator instead, that only includes the file name in the error message.
  */
 function getFullWarningMessage(warning: Warning): string {
   return `In ${warning.sourceRange.file}: [${warning.code}] - ${warning.message}`;
