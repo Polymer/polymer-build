@@ -221,7 +221,7 @@ export class StreamAnalyzer extends Transform {
     errorCountMap.set(Severity.WARNING, 0);
     errorCountMap.set(Severity.ERROR, 0);
     for (const warning of this.warnings) {
-      errorCountMap.set(warning.severity,errorCountMap.get(warning.severity) + 1);
+      errorCountMap.set(warning.severity, errorCountMap.get(warning.severity) + 1);
     }
     return errorCountMap;
   }
