@@ -158,7 +158,7 @@ export class StreamAnalyzer extends Transform {
     let allWarningCount = this.countWarningsByType();
     let errorWarningCount = allWarningCount.get(Severity.ERROR);
     if (errorWarningCount > 0) {
-      done(new Error(`${errorWarningCount} errors occurred during build.`));
+      done(new Error(`${errorWarningCount} error(s) occurred during build.`));
       return;
     }
 
