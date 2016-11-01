@@ -155,8 +155,8 @@ export class StreamAnalyzer extends Transform {
   _flush(done: (error?: any) => void) {
 
     this.printWarnings();
-    let allWarningCount = this.countWarningsByType();
-    let errorWarningCount = allWarningCount.get(Severity.ERROR);
+    const allWarningCount = this.countWarningsByType();
+    const errorWarningCount = allWarningCount.get(Severity.ERROR);
     if (errorWarningCount > 0) {
       done(new Error(`${errorWarningCount} error(s) occurred during build.`));
       return;
@@ -204,7 +204,7 @@ export class StreamAnalyzer extends Transform {
 
   printWarnings(): void {
     for (const warning of this.warnings) {
-      let message = getFullWarningMessage(warning);
+      const message = getFullWarningMessage(warning);
       if (warning.severity === Severity.ERROR) {
         logger.error(message);
       } else if (warning.severity === Severity.WARNING) {
@@ -216,7 +216,7 @@ export class StreamAnalyzer extends Transform {
   }
 
   private countWarningsByType(): Map<Severity, number> {
-    let errorCountMap = new Map<Severity, number>();
+    const errorCountMap = new Map<Severity, number>();
     errorCountMap.set(Severity.INFO, 0);
     errorCountMap.set(Severity.WARNING, 0);
     errorCountMap.set(Severity.ERROR, 0);
