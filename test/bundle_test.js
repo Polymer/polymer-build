@@ -171,7 +171,7 @@ suite('Bundler', () => {
                 shell(),
                 entrypointB(),
                 entrypointC(),
-                commonDep()
+                commonDep(),
               ],
             }).then((files) => {
         // shell bundles framework
@@ -207,7 +207,7 @@ suite('Bundler', () => {
                                           fragments: [
                                             '/root/shell.html',
                                             '/root/entrypointB.html',
-                                            '/root/entrypointC.html'
+                                            '/root/entrypointC.html',
                                           ],
                                           files: [
                                             framework(),
@@ -215,7 +215,7 @@ suite('Bundler', () => {
                                             entrypointA(),
                                             entrypointB(),
                                             entrypointC(),
-                                            commonDep()
+                                            commonDep(),
                                           ],
                                         }).then((files) => {
         // shared bundle was emitted

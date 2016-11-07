@@ -61,7 +61,7 @@ gulp.task(
 gulp.task(
     'eslint',
     () => gulp.src('test/**/*.js')
-              .pipe(eslint({rules: {'comma-dangle': 0}}))
+              .pipe(eslint({rules: {'comma-dangle': 2}}))
               .pipe(eslint.format())
               .pipe(eslint.failAfterError()));
 
