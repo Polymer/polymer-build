@@ -273,11 +273,7 @@ export class StreamAnalyzer extends Transform {
     // the dependency stream.
     this._dependencyAnalysis.fragmentToFullDeps.set(filePath, deps);
     this._dependencyAnalysis.fragmentToDeps.set(filePath, deps.imports);
-    deps.scripts.forEach((url) => this.pushDependency(url));
-    deps.styles.forEach((url) => this.pushDependency(url));
     deps.imports.forEach((url) => {
-      this.pushDependency(url);
-
       const entrypointList: string[] = this._dependencyAnalysis.depsToFragments.get(url);
       if (entrypointList) {
         entrypointList.push(filePath);
