@@ -17,14 +17,15 @@ import * as path from 'path';
 import {Analyzer} from 'polymer-analyzer';
 import {UrlLoader} from 'polymer-analyzer/lib/url-loader/url-loader';
 import {Severity, Warning} from 'polymer-analyzer/lib/warning/warning';
-import {PassThrough, Transform} from 'stream';
+import {PassThrough} from 'stream';
 
 import File = require('vinyl');
+import {src as vinylSrc} from 'vinyl-fs';
 import {parse as parseUrl} from 'url';
 import * as logging from 'plylog';
 import {ProjectConfig} from 'polymer-project-config';
 
-import {FileCB, VinylReaderTransform} from './streams';
+import {VinylReaderTransform} from './streams';
 import {urlFromPath, pathFromUrl} from './path-transformers';
 
 
@@ -72,14 +73,16 @@ function getFullWarningMessage(warning: Warning): string {
   }`;
 }
 
-export class StreamAnalyzer extends Transform {
+export class StreamAnalyzer {
   config: ProjectConfig;
 
   loader: StreamLoader;
   analyzer: Analyzer;
 
+  private _sourcesStream: NodeJS.ReadWriteStream;
+  private _sourcesOutputStream = new PassThrough({objectMode: true});
   private _dependenciesStream = new PassThrough({objectMode: true});
-  private _dependenciesProcessingStream = new VinylReaderTransform();
+  private _dependenciesOutputStream = new VinylReaderTransform();
 
   files = new Map<string, File>();
   warnings = new Set<Warning>();
@@ -95,18 +98,12 @@ export class StreamAnalyzer extends Transform {
   _resolveDependencyAnalysis: (index: DepsIndex) => void;
 
   constructor(config: ProjectConfig) {
-    super({objectMode: true});
-
     this.config = config;
 
     this.loader = new StreamLoader(this);
     this.analyzer = new Analyzer({
       urlLoader: this.loader,
     });
-
-    // Connect the dependencies stream that the analyzer pushes into to the
-    // processing stream which loads each file and attaches the file contents.
-    this._dependenciesStream.pipe(this._dependenciesProcessingStream);
 
     this.allFragmentsToAnalyze = new Set(this.config.allFragments);
     this.analyzeDependencies = new Promise((resolve, _reject) => {
@@ -115,16 +112,51 @@ export class StreamAnalyzer extends Transform {
   }
 
   /**
-   * The source dependency stream that Analyzer pushes discovered dependencies
-   * into is connected to the post-processing stream. We want consumers to only
-   * use the post-processed data so that all file objects have contents
-   * loaded by default. This also makes Analyzer easier for us to test.
+   * Start the analyzer's source stream by creating a new vinyl-fs stream. This
+   * will kick off analysis and start sending files through our sources &
+   * dependencies streams.
    */
-  get dependencies(): Transform {
-    return this._dependenciesProcessingStream;
+  start() {
+    // Create the stream of source files to analyze.
+    this._sourcesStream = vinylSrc(this.config.sources, {
+      cwdbase: true,
+      nodir: true,
+    });
+
+    // Connect the sources & dependencies input streams to their output
+    // streams. We use this input/output stream design to protect the consumer
+    // from accidentally starting the build before they are ready. By only
+    // piping the two streams together here, we can make sure that the input
+    // streams aren't referenced (and started) until this moment.
+    this._sourcesStream.pipe(this._sourcesOutputStream);
+    this._dependenciesStream.pipe(this._dependenciesOutputStream);
+
+    // Analyze all files passing through the build.
+    this._sourcesOutputStream.on('data', (file: File) => {
+      this.analyzeFile(file);
+    });
+    this._dependenciesOutputStream.on('data', (file: File) => {
+      this.analyzeFile(file);
+    });
   }
 
-  _transform(file: File, _encoding: string, callback: FileCB): void {
+  /**
+   * Return _dependenciesOutputStream, which will contain fully loaded file
+   * objects for each dependency.
+   */
+  get dependencies(): NodeJS.ReadableStream {
+    return this._dependenciesOutputStream;
+  }
+
+  /**
+   * Return _sourcesOutputStream, which will contain fully loaded file
+   * objects for each source.
+   */
+  get sources(): NodeJS.ReadableStream {
+    return this._sourcesOutputStream;
+  }
+
+  async analyzeFile(file: File): Promise<void> {
     const filePath = file.path;
     this.addFile(file);
 
@@ -133,37 +165,35 @@ export class StreamAnalyzer extends Transform {
       this.loader.resolveDeferredFile(filePath, file);
     }
 
-    // Propagate the file so that the stream can continue
-    callback(null, file);
-
     // If the file is a fragment, begin analysis on its dependencies
     if (this.config.isFragment(file.path)) {
-      (async() => {
-        try {
-          const deps = await this._getDependencies(
-              urlFromPath(this.config.root, filePath));
-          this._addDependencies(filePath, deps);
-          this.allFragmentsToAnalyze.delete(filePath);
-          // If there are no more fragments to analyze, close the dependency
-          // stream
-          if (this.allFragmentsToAnalyze.size === 0) {
-            this._dependenciesStream.end();
-          }
-        } catch (error) {
-          // Because we've already called the _transform callback, we need to
-          // propagate this error via an error on the analyzer stream itself.
-          this.emit('error', error);
-        }
-      })();
+      const deps =
+          await this._getDependencies(urlFromPath(this.config.root, filePath));
+      this._addDependencies(filePath, deps);
+      this.allFragmentsToAnalyze.delete(filePath);
+      // If there are no more fragments to analyze, we are done
+      if (this.allFragmentsToAnalyze.size === 0) {
+        this._done();
+      }
     }
   }
 
-  _flush(done: (error?: any) => void) {
+  /**
+   * Called when analysis is complete and there are no more files to analyze.
+   * Checks for serious errors before resolving its dependency analysis and
+   * ending the dependency stream that it control.
+   */
+  _done() {
     this.printWarnings();
     const allWarningCount = this.countWarningsByType();
     const errorWarningCount = allWarningCount.get(Severity.ERROR);
+
+    // If any ERROR warnings occurred, propagate an error in the build stream
     if (errorWarningCount > 0) {
-      done(new Error(`${errorWarningCount} error(s) occurred during build.`));
+      const err =
+          new Error(`${errorWarningCount} error(s) occurred during build.`);
+      this._sourcesOutputStream.emit('error', err);
+      this._dependenciesOutputStream.emit('error', err);
       return;
     }
 
@@ -172,13 +202,16 @@ export class StreamAnalyzer extends Transform {
       for (const fileUrl of this.loader.deferredFiles.keys()) {
         logger.error(`${fileUrl} never loaded`);
       }
-      done(new Error(`${this.loader.deferredFiles.size
-                     } deferred files were never loaded`));
-                     return;
+      const err = new Error(
+          this.loader.deferredFiles.size + ` deferred files were never loaded`);
+      this._sourcesOutputStream.emit('error', err);
+      this._dependenciesOutputStream.emit('error', err);
+      return;
     }
+
     // Resolve our dependency analysis promise now that we have seen all files
+    this._dependenciesStream.end();
     this._resolveDependencyAnalysis(this._dependencyAnalysis);
-    done();
   }
 
   getFile(filepath: string): File {
@@ -280,11 +313,7 @@ export class StreamAnalyzer extends Transform {
     // the dependency stream.
     this._dependencyAnalysis.fragmentToFullDeps.set(filePath, deps);
     this._dependencyAnalysis.fragmentToDeps.set(filePath, deps.imports);
-    deps.scripts.forEach((url) => this.pushDependency(url));
-    deps.styles.forEach((url) => this.pushDependency(url));
     deps.imports.forEach((url) => {
-      this.pushDependency(url);
-
       const entrypointList: string[] =
           this._dependencyAnalysis.depsToFragments.get(url);
       if (entrypointList) {

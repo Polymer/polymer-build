@@ -18,13 +18,12 @@ import * as osPath from 'path';
 import * as logging from 'plylog';
 import {Transform} from 'stream';
 import File = require('vinyl');
-import * as vfs from 'vinyl-fs';
+import {src as vinylSrc} from 'vinyl-fs';
 import {ProjectConfig, ProjectOptions} from 'polymer-project-config';
 
 import {StreamAnalyzer} from './analyzer';
 import {Bundler} from './bundle';
 import {FileCB} from './streams';
-import {forkStream} from './fork-stream';
 
 const logger = logging.getLogger('polymer-project');
 const pred = dom5.predicates;
@@ -75,27 +74,32 @@ export class PolymerProject {
     this.bundler = new Bundler(this.config, this.analyzer);
   }
 
-  // TODO(justinfagnani): add options, pass to vfs.src()
   /**
-   * Returns a streams of this project's source files - files matched by the
-   * globs returns from `getSourceGlobs`, and not matched by
-   * `getDependencyGlobs` (which are inverted and appended to the source globs).
-   */
-  sources(): NodeJS.ReadableStream {
-    return vfs.src(this.config.sources, {
-      cwdbase: true,
-      nodir: true,
-    });
+   * Starts the build by starting analysis, which will begin populating the
+   * sources() & dependencies() streams.  */
+  startBuild(): any {
+    this.analyzer.start();
   }
 
-  dependencies(): NodeJS.ReadableStream {
-    let dependenciesStream: NodeJS.ReadableStream =
-        forkStream(this.analyzer.dependencies);
+  /**
+   * Returns the analyzer's stream of this project's source files - files
+   * matched by the project's `config.sources` value.
+   */
+  sources(): NodeJS.ReadableStream {
+    return this.analyzer.sources;
+  }
 
-    // If we need to include additional dependencies, create a new vfs.src
+  /**
+   * Returns the analyzer's stream of this project's dependency files - files
+   * loaded inside the analyzed project that are not considered source files.
+   */
+  dependencies(): NodeJS.ReadableStream {
+    let dependenciesStream: NodeJS.ReadableStream = this.analyzer.dependencies;
+
+    // If we need to include additional dependencies, create a new vinyl source
     // stream and pipe our default dependencyStream through it to combine.
     if (this.config.extraDependencies.length > 0) {
-      const includeStream = vfs.src(this.config.extraDependencies, {
+      const includeStream = vinylSrc(this.config.extraDependencies, {
         cwdbase: true,
         nodir: true,
         passthrough: true,
