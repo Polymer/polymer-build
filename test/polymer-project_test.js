@@ -20,6 +20,7 @@ const stream = require('stream');
 const File = require('vinyl');
 const mergeStream = require('merge-stream');
 
+const waitFor = require('../lib/streams').waitFor;
 const PolymerProject = require('../lib/polymer-project').PolymerProject;
 const testProjectRoot = path.resolve(__dirname, 'static/test-project');
 
@@ -48,6 +49,7 @@ suite('PolymerProject', () => {
 
   test('reads sources', (done) => {
     const files = [];
+    defaultProject.startBuild();
     defaultProject.sources().on('data', (f) => files.push(f)).on('end', () => {
       const names = files.map((f) => unroot(f.path));
       const expected = [
@@ -59,6 +61,34 @@ suite('PolymerProject', () => {
       done();
     });
   });
+
+  test(
+      'the source/dependency streams won\'t start until startBuild() is called',
+      (done) => {
+        const dependencyStream = defaultProject.dependencies();
+        const sourcesStream = defaultProject.sources();
+
+        function throwIfCalled() {
+          throw new Error('No data expected before start() is called!');
+        }
+        function finishIfCalled() {
+          done();
+          done = function noop() {};
+        }
+
+        // Throw if data is passed at this point
+        sourcesStream.on('data', throwIfCalled);
+        dependencyStream.on('data', throwIfCalled);
+
+        setTimeout(function() {
+          // Once start() is called, data is expected
+          sourcesStream.removeListener('data', throwIfCalled);
+          dependencyStream.removeListener('data', throwIfCalled);
+          sourcesStream.on('data', finishIfCalled);
+          dependencyStream.on('data', finishIfCalled);
+          defaultProject.startBuild();
+        }, 250);
+      });
 
   suite('.dependencies()', () => {
 
@@ -75,13 +105,12 @@ suite('PolymerProject', () => {
         assert.sameMembers(names, expected);
         done();
       });
-      mergeStream(defaultProject.sources(), dependencyStream)
-          .pipe(defaultProject.analyzer);
+      defaultProject.startBuild();
     });
 
     test(
         'reads dependencies in a monolithic (non-shell) application without timing out',
-        (done) => {
+        () => {
           const project = new PolymerProject({
             root: testProjectRoot,
             entrypoint: 'index.html',
@@ -92,9 +121,8 @@ suite('PolymerProject', () => {
             ],
           });
 
-          mergeStream(project.sources(), project.dependencies())
-              .pipe(project.analyzer)
-              .on('finish', done);
+          project.startBuild();
+          return waitFor(project.dependencies());
         });
 
     test(
@@ -115,6 +143,7 @@ suite('PolymerProject', () => {
 
           const dependencyStream = projectWithIncludedDeps.dependencies();
           dependencyStream.on('data', (f) => files.push(f));
+          dependencyStream.on('error', done);
           dependencyStream.on('end', () => {
             const names = files.map((f) => unroot(f.path));
             const expected = [
@@ -126,8 +155,7 @@ suite('PolymerProject', () => {
             done();
           });
 
-          mergeStream(projectWithIncludedDeps.sources(), dependencyStream)
-              .pipe(projectWithIncludedDeps.analyzer);
+          projectWithIncludedDeps.startBuild();
         });
 
   });
@@ -171,6 +199,7 @@ suite('PolymerProject', () => {
               joinedFiles.get('shell.html').contents.toString(), `console.log`);
           done();
         });
+    defaultProject.startBuild();
   });
 
   test('split/rejoin deals with bad paths', (done) => {

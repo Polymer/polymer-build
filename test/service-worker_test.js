@@ -40,7 +40,7 @@ suite('service-worker', () => {
       ],
     });
 
-    temp.mkdir('polymer-cli', (err, dir) => {
+    temp.mkdir('polymer-build-test', (err, dir) => {
       if (err) {
         return done(err);
       }
@@ -48,8 +48,8 @@ suite('service-worker', () => {
       vfs.src(path.join(__dirname, 'static/test-project/**'))
           .pipe(vfs.dest(dir))
           .on('finish', () => {
+            defaultProject.startBuild();
             mergeStream(defaultProject.sources(), defaultProject.dependencies())
-                .pipe(defaultProject.analyzer)
                 .pipe(vfs.dest(testBuildRoot))
                 .on('finish', () => done())
                 .on('error', done);
