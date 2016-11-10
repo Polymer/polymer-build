@@ -43,46 +43,48 @@ gulp.task('build', ['clean'], () => {
       tsResult.dts.pipe(gulp.dest('lib')), tsResult.js.pipe(gulp.dest('lib')));
 });
 
-gulp.task(
-    'test',
-    ['build'],
-    () => gulp.src('test/**/*_test.js', {read: false}).pipe(mocha({
-      ui: 'tdd',
-      reporter: 'spec',
-    })));
+gulp.task('test', ['build'], function() {
+  return gulp.src('test/**/*_test.js', {read: false}).pipe(mocha({
+    ui: 'tdd',
+    reporter: 'spec',
+  }))
+});
 
-gulp.task(
-    'tslint',
-    () =>
-        gulp.src('src/**/*.ts')
-            .pipe(tslint({configuration: 'tslint.json', formatter: 'verbose'}))
-            .pipe(tslint.report()));
+gulp.task('tslint', function() {
+  return gulp.src('src/**/*.ts')
+      .pipe(tslint({configuration: 'tslint.json', formatter: 'verbose'}))
+      .pipe(tslint.report())
+});
 
-gulp.task(
-    'eslint',
-    () => gulp.src('test/**/*.js')
-              .pipe(eslint({rules: {'comma-dangle': 2}}))
-              .pipe(eslint.format())
-              .pipe(eslint.failAfterError()));
+gulp.task('eslint', function() {
+  return gulp.src('test/**/*.js')
+      .pipe(eslint({rules: {'comma-dangle': 2}}))
+      .pipe(eslint.format())
+      .pipe(eslint.failAfterError())
+});
 
-gulp.task(
-    'depcheck',
-    () => depcheck(__dirname, {
-            // "@types/*" dependencies are type declarations that are
-            // automatically
-            // loaded by TypeScript during build. depcheck can't detect this
-            // so we ignore them here.
-            // "hydrolosis" is being incorrectly matched because it is no longer
-            // used directly in code. TODO: remove from this list once we remove
-            // as dependency.
-            ignoreMatches: ['@types/*', 'hydrolysis']
-          }).then((result) => {
-      let invalidFiles = Object.keys(result.invalidFiles) || [];
-      let invalidJsFiles = invalidFiles.filter((f) => f.endsWith('.js'));
-      if (invalidJsFiles.length > 0) {
-        throw new Error(`Invalid files: ${invalidJsFiles}`);
-      }
-      if (result.dependencies.length) {
-        throw new Error(`Unused dependencies: ${result.dependencies}`);
-      }
-    }));
+gulp.task('depcheck', function() {
+  return depcheck(__dirname, {
+           // "@types/*" dependencies are type declarations that are
+           // automatically
+           // loaded by TypeScript during build. depcheck can't detect
+           // this
+           // so we ignore them here.
+           // "hydrolosis" is being incorrectly matched because it is
+           // no longer
+           // used directly in code. TODO: remove from this list once
+           // we remove
+           // as dependency.
+           ignoreMatches: ['@types/*', 'hydrolysis']
+         })
+      .then((result) => {
+        let invalidFiles = Object.keys(result.invalidFiles) || [];
+        let invalidJsFiles = invalidFiles.filter((f) => f.endsWith('.js'));
+        if (invalidJsFiles.length > 0) {
+          throw new Error(`Invalid files: ${invalidJsFiles}`);
+        }
+        if (result.dependencies.length) {
+          throw new Error(`Unused dependencies: ${result.dependencies}`);
+        }
+      })
+});
