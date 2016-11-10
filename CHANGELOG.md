@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased - Breaking Changes
 
-* **Interface Update!** The analyzer is no longer a required step in your build pipeline. Instead, analysis happens first to start your build and fill the `project.sources()` and `project.dependencies()` streams automatically. To start the flow of data through these streams, you'll need to call `project.startBuild()` when you're ready. See [the README](/README.md) for updated examples of what this looks like.
+* **Interface Update!** The analyzer is no longer a required step in your build pipeline. Instead, analysis happens automatically when you start your build to fill the `project.sources()` and `project.dependencies()` streams for your project. To start the flow of data through these streams, you'll need to call `project.startBuild()` when you're ready. See [the README](/README.md) for updated examples of what this looks like.
 
 ## [0.5.1] - 2016-12-02
 
