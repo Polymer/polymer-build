@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## Unreleased - Breaking Changes
 
-<!-- New PRs should document their changes here. -->
+* **Interface Update!** The analyzer is no longer a required step in your build pipeline. Instead, analysis happens first to start your build and fill the `project.sources()` and `project.dependencies()` streams automatically. To start the flow of data through these streams, you'll need to call `project.startBuild()` when you're ready. See [the README](/README.md) for updated examples of what this looks like.
 
 ## [0.5.1] - 2016-12-02
 
