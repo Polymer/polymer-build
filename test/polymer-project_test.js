@@ -18,7 +18,6 @@ const assert = require('chai').assert;
 const path = require('path');
 const stream = require('stream');
 const File = require('vinyl');
-const mergeStream = require('merge-stream');
 
 const waitFor = require('../lib/streams').waitFor;
 const PolymerProject = require('../lib/polymer-project').PolymerProject;

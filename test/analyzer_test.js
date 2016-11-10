@@ -16,11 +16,8 @@
 
 const assert = require('chai').assert;
 const path = require('path');
-const Writable = require('stream').Writable;
 const StreamAnalyzer = require('../lib/analyzer').StreamAnalyzer;
 const waitForAll = require('../lib/streams').waitForAll;
-const mergeStream = require('merge-stream');
-const vfs = require('vinyl-fs-fake');
 const sinon = require('sinon');
 const ProjectConfig = require('polymer-project-config').ProjectConfig;
 
