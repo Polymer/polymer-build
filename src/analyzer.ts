@@ -133,10 +133,10 @@ export class StreamAnalyzer {
 
     // Analyze all files passing through the build.
     this._sourcesOutputStream.on('data', (file: File) => {
-      this.analyzeFile(file);
+      this._analyzeFile(file);
     });
     this._dependenciesOutputStream.on('data', (file: File) => {
-      this.analyzeFile(file);
+      this._analyzeFile(file);
     });
   }
 
@@ -156,7 +156,7 @@ export class StreamAnalyzer {
     return this._sourcesOutputStream;
   }
 
-  async analyzeFile(file: File): Promise<void> {
+  private async _analyzeFile(file: File): Promise<void> {
     const filePath = file.path;
     this.addFile(file);
 
@@ -183,7 +183,7 @@ export class StreamAnalyzer {
    * Checks for serious errors before resolving its dependency analysis and
    * ending the dependency stream that it control.
    */
-  _done() {
+  private _done() {
     this.printWarnings();
     const allWarningCount = this.countWarningsByType();
     const errorWarningCount = allWarningCount.get(Severity.ERROR);
