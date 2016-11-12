@@ -48,7 +48,6 @@ suite('PolymerProject', () => {
 
   test('reads sources', (done) => {
     const files = [];
-    defaultProject.startBuild();
     defaultProject.sources().on('data', (f) => files.push(f)).on('end', () => {
       const names = files.map((f) => unroot(f.path));
       const expected = [
@@ -61,33 +60,20 @@ suite('PolymerProject', () => {
     });
   });
 
-  test(
-      'the source/dependency streams won\'t start until startBuild() is called',
-      (done) => {
-        const dependencyStream = defaultProject.dependencies();
-        const sourcesStream = defaultProject.sources();
+  test('the sources & dependencies streams remain paused until use', () => {
+    // Check that data isn't flowing through sources until consumer usage
+    const sourcesStream = defaultProject.sources();
+    assert.isNull(sourcesStream._readableState.flowing);
+    sourcesStream.on('data', () => {});
+    assert.isTrue(sourcesStream._readableState.flowing);
 
-        function throwIfCalled() {
-          throw new Error('No data expected before start() is called!');
-        }
-        function finishIfCalled() {
-          done();
-          done = function noop() {};
-        }
-
-        // Throw if data is passed at this point
-        sourcesStream.on('data', throwIfCalled);
-        dependencyStream.on('data', throwIfCalled);
-
-        setTimeout(function() {
-          // Once start() is called, data is expected
-          sourcesStream.removeListener('data', throwIfCalled);
-          dependencyStream.removeListener('data', throwIfCalled);
-          sourcesStream.on('data', finishIfCalled);
-          dependencyStream.on('data', finishIfCalled);
-          defaultProject.startBuild();
-        }, 250);
-      });
+    // Check that data isn't flowing through dependencies until consumer
+    // usage
+    const dependencyStream = defaultProject.dependencies();
+    assert.isNull(dependencyStream._readableState.flowing);
+    dependencyStream.on('data', () => {});
+    assert.isTrue(dependencyStream._readableState.flowing);
+  });
 
   suite('.dependencies()', () => {
 
@@ -104,7 +90,6 @@ suite('PolymerProject', () => {
         assert.sameMembers(names, expected);
         done();
       });
-      defaultProject.startBuild();
     });
 
     test(
@@ -120,8 +105,9 @@ suite('PolymerProject', () => {
             ],
           });
 
-          project.startBuild();
-          return waitFor(project.dependencies());
+          let dependencyStream = project.dependencies();
+          dependencyStream.on('data', () => {});
+          return waitFor(dependencyStream);
         });
 
     test(
@@ -153,8 +139,6 @@ suite('PolymerProject', () => {
             assert.sameMembers(names, expected);
             done();
           });
-
-          projectWithIncludedDeps.startBuild();
         });
 
   });
@@ -198,7 +182,6 @@ suite('PolymerProject', () => {
               joinedFiles.get('shell.html').contents.toString(), `console.log`);
           done();
         });
-    defaultProject.startBuild();
   });
 
   test('split/rejoin deals with bad paths', (done) => {

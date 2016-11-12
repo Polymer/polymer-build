@@ -25,7 +25,7 @@ const analyzer = require('../lib/analyzer');
 const bundle = require('../lib/bundle');
 
 const Bundler = bundle.Bundler;
-const StreamAnalyzer = analyzer.StreamAnalyzer;
+const BuildAnalyzer = analyzer.BuildAnalyzer;
 
 const root = path.resolve('test/static/bundler-data');
 
@@ -38,8 +38,7 @@ suite('Bundler', () => {
   let setupTest = (options) => new Promise((resolve, reject) => {
     options.root = options.root || root;
     let config = new ProjectConfig(options);
-    let analyzer = new StreamAnalyzer(config);
-    analyzer.start();
+    let analyzer = new BuildAnalyzer(config);
     bundler = new Bundler(config, analyzer);
     bundledStream =
         mergeStream(analyzer.sources, analyzer.dependencies).pipe(bundler);

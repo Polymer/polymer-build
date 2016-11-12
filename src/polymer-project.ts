@@ -21,7 +21,7 @@ import File = require('vinyl');
 import {src as vinylSrc} from 'vinyl-fs';
 import {ProjectConfig, ProjectOptions} from 'polymer-project-config';
 
-import {StreamAnalyzer} from './analyzer';
+import {BuildAnalyzer} from './analyzer';
 import {Bundler} from './bundle';
 import {FileCB} from './streams';
 
@@ -47,7 +47,7 @@ export class PolymerProject {
    * can be used to get information on dependencies and fragments for the
    * project once the source & dependency streams have been piped into it.
    */
-  analyzer: StreamAnalyzer;
+  analyzer: BuildAnalyzer;
 
   /**
    * A `Transform` stream that modifies the files that pass through it based
@@ -70,15 +70,8 @@ export class PolymerProject {
 
     logger.debug(`config: ${this.config}`);
 
-    this.analyzer = new StreamAnalyzer(this.config);
+    this.analyzer = new BuildAnalyzer(this.config);
     this.bundler = new Bundler(this.config, this.analyzer);
-  }
-
-  /**
-   * Starts the build by starting analysis, which will begin populating the
-   * sources() & dependencies() streams.  */
-  startBuild(): any {
-    this.analyzer.start();
   }
 
   /**

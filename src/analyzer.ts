@@ -17,7 +17,7 @@ import * as path from 'path';
 import {Analyzer} from 'polymer-analyzer';
 import {UrlLoader} from 'polymer-analyzer/lib/url-loader/url-loader';
 import {Severity, Warning} from 'polymer-analyzer/lib/warning/warning';
-import {PassThrough} from 'stream';
+import {PassThrough, Transform} from 'stream';
 
 import File = require('vinyl');
 import {src as vinylSrc} from 'vinyl-fs';
@@ -73,16 +73,78 @@ function getFullWarningMessage(warning: Warning): string {
   }`;
 }
 
-export class StreamAnalyzer {
-  config: ProjectConfig;
+/**
+ * A stream that tells the BuildAnalyzer to resolve each file it sees. It's
+ * important that resolving loaded files happens as soon as possible, in a way
+ * that doesn't block analysis or other tasks that rely on file loading.
+ */
+class ResolveStream extends Transform {
+  analyzer: BuildAnalyzer;
 
+  constructor(analyzer: BuildAnalyzer) {
+    super({objectMode: true});
+    this.analyzer = analyzer;
+  }
+
+  _transform(
+      file: File,
+      _encoding: string,
+      callback: (error?: Error, data?: File) => void): void {
+    try {
+      this.analyzer.resolveFile(file);
+    } catch (err) {
+      callback(err);
+      return;
+    }
+    callback(null, file);
+  }
+}
+
+/**
+ * A stream to analyze ever file that passes through it. This is used to analyze
+ * files as they pass through the source stream.
+ *
+ * We create a new stream to handle this because the alternative (attaching
+ * event listeners directly to the existing sources stream) would
+ * start the flow of data before the user was ready to consume it. By
+ * analyzing inside of the stream instead of via "data" event listeners, the
+ * source stream will remain paused until the user is ready to start the stream
+ * themselves.
+ */
+class AnalyzeStream extends Transform {
+  analyzer: BuildAnalyzer;
+
+  constructor(analyzer: BuildAnalyzer) {
+    super({objectMode: true});
+    this.analyzer = analyzer;
+  }
+
+  _transform(
+      file: File,
+      _encoding: string,
+      callback: (error?: Error, data?: File) => void): void {
+    (async() => {
+      try {
+        await this.analyzer.analyzeFile(file);
+      } catch (err) {
+        callback(err);
+        return;
+      }
+      callback(null, file);
+    })();
+  }
+}
+
+
+export class BuildAnalyzer {
+  config: ProjectConfig;
   loader: StreamLoader;
   analyzer: Analyzer;
 
-  private _sourcesStream: NodeJS.ReadWriteStream;
-  private _sourcesOutputStream = new PassThrough({objectMode: true});
-  private _dependenciesStream = new PassThrough({objectMode: true});
-  private _dependenciesOutputStream = new VinylReaderTransform();
+  private _sourcesStream: NodeJS.ReadableStream;
+  private _sourcesProcessingStream: NodeJS.ReadWriteStream;
+  private _dependenciesStream: Transform = new PassThrough({objectMode: true});
+  private _dependenciesProcessingStream: NodeJS.ReadWriteStream;
 
   files = new Map<string, File>();
   warnings = new Set<Warning>();
@@ -109,54 +171,49 @@ export class StreamAnalyzer {
     this.analyzeDependencies = new Promise((resolve, _reject) => {
       this._resolveDependencyAnalysis = resolve;
     });
-  }
 
-  /**
-   * Start the analyzer's source stream by creating a new vinyl-fs stream. This
-   * will kick off analysis and start sending files through our sources &
-   * dependencies streams.
-   */
-  start() {
-    // Create the stream of source files to analyze.
+    // Create the vinyl source stream of files to read out of.
     this._sourcesStream = vinylSrc(this.config.sources, {
       cwdbase: true,
       nodir: true,
     });
 
-    // Connect the sources & dependencies input streams to their output
-    // streams. We use this input/output stream design to protect the consumer
-    // from accidentally starting the build before they are ready. By only
-    // piping the two streams together here, we can make sure that the input
-    // streams aren't referenced (and started) until this moment.
-    this._sourcesStream.pipe(this._sourcesOutputStream);
-    this._dependenciesStream.pipe(this._dependenciesOutputStream);
+    // _sourcesProcessingStream: Pipe the sources stream through...
+    //   1. The resolver stream, to resolve each file loaded via the analyzer
+    //   2. The analyzer stream, to analyze app fragments for dependencies
+    this._sourcesProcessingStream =
+        this._sourcesStream.pipe(new ResolveStream(this))
+            .pipe(new AnalyzeStream(this));
 
-    // Analyze all files passing through the build.
-    this._sourcesOutputStream.on('data', (file: File) => {
-      this._analyzeFile(file);
-    });
-    this._dependenciesOutputStream.on('data', (file: File) => {
-      this._analyzeFile(file);
-    });
+    // _dependenciesProcessingStream: Pipe the dependencies stream through...
+    //   1. The vinyl loading stream, to load file objects from file paths
+    //   1. The resolver stream, to resolve each loaded file for the analyzer
+    this._dependenciesProcessingStream =
+        this._dependenciesStream.pipe(new VinylReaderTransform())
+            .pipe(new ResolveStream(this));
   }
 
   /**
    * Return _dependenciesOutputStream, which will contain fully loaded file
-   * objects for each dependency.
+   * objects for each dependency after analysis.
    */
   get dependencies(): NodeJS.ReadableStream {
-    return this._dependenciesOutputStream;
+    return this._dependenciesProcessingStream;
   }
 
   /**
    * Return _sourcesOutputStream, which will contain fully loaded file
-   * objects for each source.
+   * objects for each source after analysis.
    */
   get sources(): NodeJS.ReadableStream {
-    return this._sourcesOutputStream;
+    return this._sourcesProcessingStream;
   }
 
-  private async _analyzeFile(file: File): Promise<void> {
+  /**
+   * Resolve a loaded file for our analyzer's loader so that analysis is able to
+   * continue.
+   */
+  resolveFile(file: File) {
     const filePath = file.path;
     this.addFile(file);
 
@@ -164,9 +221,18 @@ export class StreamAnalyzer {
     if (this.loader.hasDeferredFile(filePath)) {
       this.loader.resolveDeferredFile(filePath, file);
     }
+  }
+
+  /**
+   * Analyze a file to find additional dependencies to load. Currently we only
+   * get dependencies for application fragments. When all fragments are
+   * analyzed, we call _done() to signal that analysis is complete.
+   */
+  async analyzeFile(file: File): Promise<void> {
+    const filePath = file.path;
 
     // If the file is a fragment, begin analysis on its dependencies
-    if (this.config.isFragment(file.path)) {
+    if (this.config.isFragment(filePath)) {
       const deps =
           await this._getDependencies(urlFromPath(this.config.root, filePath));
       this._addDependencies(filePath, deps);
@@ -181,31 +247,32 @@ export class StreamAnalyzer {
   /**
    * Called when analysis is complete and there are no more files to analyze.
    * Checks for serious errors before resolving its dependency analysis and
-   * ending the dependency stream that it control.
+   * ending the dependency stream (which it controls).
    */
   private _done() {
     this.printWarnings();
     const allWarningCount = this.countWarningsByType();
     const errorWarningCount = allWarningCount.get(Severity.ERROR);
 
-    // If any ERROR warnings occurred, propagate an error in the build stream
+    // If any ERROR warnings occurred, propagate an error in each build stream.
     if (errorWarningCount > 0) {
       const err =
           new Error(`${errorWarningCount} error(s) occurred during build.`);
-      this._sourcesOutputStream.emit('error', err);
-      this._dependenciesOutputStream.emit('error', err);
+      this._sourcesProcessingStream.emit('error', err);
+      this._dependenciesProcessingStream.emit('error', err);
       return;
     }
 
-    // If stream finished with files that still needed to be loaded, error out
+    // If stream finished with files that still needed to be loaded, propagate
+    // an error in each build stream.
     if (this.loader.hasDeferredFiles()) {
       for (const fileUrl of this.loader.deferredFiles.keys()) {
         logger.error(`${fileUrl} never loaded`);
       }
       const err = new Error(
           this.loader.deferredFiles.size + ` deferred files were never loaded`);
-      this._sourcesOutputStream.emit('error', err);
-      this._dependenciesOutputStream.emit('error', err);
+      this._sourcesProcessingStream.emit('error', err);
+      this._dependenciesProcessingStream.emit('error', err);
       return;
     }
 
@@ -359,14 +426,14 @@ export type DeferredFileCallback = (a: string) => string;
 
 export class StreamLoader implements BackwardsCompatibleUrlLoader {
   config: ProjectConfig;
-  analyzer: StreamAnalyzer;
+  analyzer: BuildAnalyzer;
 
   // Store files that have not yet entered the Analyzer stream here.
   // Later, when the file is seen, the DeferredFileCallback can be
   // called with the file contents to resolve its loading.
   deferredFiles = new Map<string, DeferredFileCallback>();
 
-  constructor(analyzer: StreamAnalyzer) {
+  constructor(analyzer: BuildAnalyzer) {
     this.analyzer = analyzer;
     this.config = this.analyzer.config;
   }

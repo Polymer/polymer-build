@@ -16,10 +16,25 @@
 
 const assert = require('chai').assert;
 const path = require('path');
-const StreamAnalyzer = require('../lib/analyzer').StreamAnalyzer;
+const BuildAnalyzer = require('../lib/analyzer').BuildAnalyzer;
 const waitForAll = require('../lib/streams').waitForAll;
 const sinon = require('sinon');
 const ProjectConfig = require('polymer-project-config').ProjectConfig;
+const Writable = require('stream').Writable;
+
+/**
+ * Streams will remain paused unless something is listening for it's data.
+ * NoopStream is useful for piping to if you just want the stream to run and end
+ * successfully without checking the data passed through it.
+ */
+class NoopStream extends Writable {
+  constructor() {
+    super({objectMode: true});
+  }
+  _write(chunk, encoding, callback) {
+    callback();
+  }
+}
 
 suite('Analyzer', () => {
 
@@ -35,8 +50,10 @@ suite('Analyzer', () => {
         ],
         sources: ['a.html', 'b.html', 'entrypoint.html'],
       });
-      const analyzer = new StreamAnalyzer(config);
-      analyzer.start();
+
+      const analyzer = new BuildAnalyzer(config);
+      analyzer.sources.pipe(new NoopStream());
+      analyzer.dependencies.pipe(new NoopStream());
 
       return waitForAll([analyzer.sources, analyzer.dependencies])
           .then(() => {
@@ -61,8 +78,10 @@ suite('Analyzer', () => {
         shell: 'shell.html',
         sources: sourceFiles,
       });
-      let analyzer = new StreamAnalyzer(config);
-      analyzer.start();
+
+      let analyzer = new BuildAnalyzer(config);
+      analyzer.sources.pipe(new NoopStream());
+      analyzer.dependencies.pipe(new NoopStream());
 
       return waitForAll([analyzer.sources, analyzer.dependencies])
           .then(() => {
@@ -80,6 +99,7 @@ suite('Analyzer', () => {
   suite('.dependencies', () => {
 
     test('outputs all dependencies needed by source', () => {
+      const foundDependencies = new Set();
       const root = `test/static/analyzer-data`;
       const sourceFiles =
           ['shell.html', 'entrypoint.html'].map((p) => path.resolve(root, p));
@@ -89,12 +109,12 @@ suite('Analyzer', () => {
         shell: 'shell.html',
         sources: sourceFiles,
       });
-      let analyzer = new StreamAnalyzer(config);
-      let foundDependencies = new Set();
+
+      let analyzer = new BuildAnalyzer(config);
+      analyzer.sources.pipe(new NoopStream());
       analyzer.dependencies.on('data', (file) => {
         foundDependencies.add(file.path);
       });
-      analyzer.start();
 
       return waitForAll([analyzer.sources, analyzer.dependencies]).then(() => {
         // shared-1 is never imported by shell/entrypoint, so it is not
@@ -109,6 +129,7 @@ suite('Analyzer', () => {
 
     test(
         'outputs all dependencies needed by source and given fragments', () => {
+          const foundDependencies = new Set();
           const root = `test/static/analyzer-data`;
           const sourceFiles =
               ['a.html', 'b.html', 'shell.html', 'entrypoint.html'].map(
@@ -123,12 +144,11 @@ suite('Analyzer', () => {
             ],
             sources: sourceFiles,
           });
-          let analyzer = new StreamAnalyzer(config);
-          let foundDependencies = new Set();
+          const analyzer = new BuildAnalyzer(config);
+          analyzer.sources.pipe(new NoopStream());
           analyzer.dependencies.on('data', (file) => {
             foundDependencies.add(file.path);
           });
-          analyzer.start();
 
           return waitForAll([analyzer.sources, analyzer.dependencies])
               .then(() => {
@@ -153,8 +173,10 @@ suite('Analyzer', () => {
           root: root,
           sources: [sourceFiles],
         });
-        const analyzer = new StreamAnalyzer(config);
-        analyzer.start();
+
+        const analyzer = new BuildAnalyzer(config);
+        analyzer.sources.pipe(new NoopStream());
+        analyzer.dependencies.pipe(new NoopStream());
 
         return waitForAll([analyzer.sources, analyzer.dependencies])
             .then(
@@ -177,10 +199,9 @@ suite('Analyzer', () => {
           root: root,
           sources: [sourceFiles],
         });
-        const analyzer = new StreamAnalyzer(config);
-        const printWarningsSpy = sinon.spy(analyzer, 'printWarnings');
-        analyzer.start();
 
+        const analyzer = new BuildAnalyzer(config);
+        const printWarningsSpy = sinon.spy(analyzer, 'printWarnings');
         analyzer.sources.on(
             'data', () => assert.isFalse(printWarningsSpy.called));
         analyzer.dependencies.on(
@@ -196,42 +217,29 @@ suite('Analyzer', () => {
                 });
       });
 
-  test(
-      'the analyzer won\'t start the source/dependency streams until start() is called',
-      (done) => {
-        const config = new ProjectConfig({
-          root: `test/static/analyzer-data`,
-          entrypoint: 'entrypoint.html',
-          fragments: [
-            'a.html',
-            'b.html',
-          ],
-          sources: ['a.html', 'b.html', 'entrypoint.html'],
-        });
-        const analyzer = new StreamAnalyzer(config);
+  test('the source/dependency streams remain paused until use', () => {
+    const config = new ProjectConfig({
+      root: `test/static/analyzer-data`,
+      entrypoint: 'entrypoint.html',
+      fragments: [
+        'a.html',
+        'b.html',
+      ],
+      sources: ['a.html', 'b.html', 'entrypoint.html'],
+    });
 
-        function throwIfCalled() {
-          throw new Error('No data expected before start() is called!');
-        }
-        function finishIfCalled() {
-          done();
-          done = function noop() {};
-        }
+    const analyzer = new BuildAnalyzer(config);
 
-        // Throw if data is passed at this point
-        analyzer.sources.on('data', throwIfCalled);
-        analyzer.dependencies.on('data', throwIfCalled);
+    // Check that data isn't flowing through sources until consumer usage
+    assert.isNull(analyzer.sources._readableState.flowing);
+    analyzer.sources.on('data', () => {});
+    assert.isTrue(analyzer.sources._readableState.flowing);
 
-        setTimeout(function() {
-          // Once start() is called, data is expected
-          analyzer.sources.removeListener('data', throwIfCalled);
-          analyzer.dependencies.removeListener('data', throwIfCalled);
-          analyzer.sources.on('data', finishIfCalled);
-          analyzer.dependencies.on('data', finishIfCalled);
-          analyzer.start();
-        }, 250);
-
-      });
+    // Check that data isn't flowing through dependencies until consumer usage
+    assert.isNull(analyzer.dependencies._readableState.flowing);
+    analyzer.dependencies.on('data', () => {});
+    assert.isTrue(analyzer.dependencies._readableState.flowing);
+  });
 
   // TODO(fks) 10-26-2016: Refactor logging to be testable, and configurable by
   // the consumer.

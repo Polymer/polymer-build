@@ -48,7 +48,6 @@ suite('service-worker', () => {
       vfs.src(path.join(__dirname, 'static/test-project/**'))
           .pipe(vfs.dest(dir))
           .on('finish', () => {
-            defaultProject.startBuild();
             mergeStream(defaultProject.sources(), defaultProject.dependencies())
                 .pipe(vfs.dest(testBuildRoot))
                 .on('finish', () => done())
