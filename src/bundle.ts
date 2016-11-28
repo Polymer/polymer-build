@@ -104,15 +104,14 @@ export class Bundler extends Transform {
 
       promises.push(new Promise((resolve, reject) => {
         const vulcanize = new Vulcanize({
-          abspath: null,
+          abspath: this.config.root,
           fsResolver: this.analyzer.loader,
           addedImports: addedImports,
           stripExcludes: excludes,
           inlineScripts: true,
           inlineCss: true,
-          inputUrl: fragmentUrl,
         });
-        vulcanize.process(null, (err: any, doc: string) => {
+        vulcanize.process(fragmentUrl, (err: any, doc: string) => {
           if (err) {
             reject(err);
           } else {
@@ -203,13 +202,12 @@ export class Bundler extends Transform {
       this.analyzer.addFile(this.sharedFile);
 
       const vulcanize = new Vulcanize({
-        abspath: null,
+        abspath: this.config.root,
         fsResolver: this.analyzer.loader,
         inlineScripts: true,
         inlineCss: true,
-        inputUrl: this.sharedBundleUrl,
       });
-      vulcanize.process(null, (err: any, doc: any) => {
+      vulcanize.process(this.sharedBundleUrl, (err: any, doc: any) => {
         if (err) {
           reject(err);
         } else {
