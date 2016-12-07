@@ -29,7 +29,7 @@ const bundle = require('../lib/bundle');
 const Bundler = bundle.Bundler;
 const StreamAnalyzer = analyzer.StreamAnalyzer;
 
-const root = path.resolve('/root');
+const root = path.resolve('root/');
 
 suite('Bundler', () => {
 
