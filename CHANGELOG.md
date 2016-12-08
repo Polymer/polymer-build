@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased - Breaking Changes
 
 * **Interface Update!** `PolymerProject.analyzer` is no longer a required step in your build pipeline. Instead, analysis happens automatically while it fills the `project.sources()` and `project.dependencies()` streams with your project files. See [the README](/README.md) for updated examples of what build streams look like without the analyzer.
-* `StreamAnalyzer` is now `BuildAnalyzer`, since it is no longer a stream. This change only affects uses who are accessing and/or using `StreamAnalyzer` directly from the `polymer-build` module.
+* `StreamAnalyzer` is now `BuildAnalyzer` (since it is no longer a stream). This change only affects uses who are importing and/or using `StreamAnalyzer` directly from the `polymer-build` module.
 
 ## [0.5.1] - 2016-12-02
 

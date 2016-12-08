@@ -75,10 +75,10 @@ function getFullWarningMessage(warning: Warning): string {
 
 /**
  * A stream that tells the BuildAnalyzer to resolve each file it sees. It's
- * important that resolving loaded files happens as soon as possible, in a way
- * that doesn't block analysis or other tasks that rely on file loading.
+ * important that files are resolved here in a seperate stream, so that analysis
+ * and file loading/resolution can't block each other while waiting.
  */
-class ResolveStream extends Transform {
+class ResolveTransform extends Transform {
   analyzer: BuildAnalyzer;
 
   constructor(analyzer: BuildAnalyzer) {
@@ -101,8 +101,9 @@ class ResolveStream extends Transform {
 }
 
 /**
- * A stream to analyze ever file that passes through it. This is used to analyze
- * files as they pass through the source stream.
+ * A stream to analyze every file that passes through it. This is used to
+ * analyze important application fragments as they pass through the source
+ * stream.
  *
  * We create a new stream to handle this because the alternative (attaching
  * event listeners directly to the existing sources stream) would
@@ -111,7 +112,7 @@ class ResolveStream extends Transform {
  * source stream will remain paused until the user is ready to start the stream
  * themselves.
  */
-class AnalyzeStream extends Transform {
+class AnalyzeTransform extends Transform {
   analyzer: BuildAnalyzer;
 
   constructor(analyzer: BuildAnalyzer) {
@@ -182,15 +183,15 @@ export class BuildAnalyzer {
     //   1. The resolver stream, to resolve each file loaded via the analyzer
     //   2. The analyzer stream, to analyze app fragments for dependencies
     this._sourcesProcessingStream =
-        this._sourcesStream.pipe(new ResolveStream(this))
-            .pipe(new AnalyzeStream(this));
+        this._sourcesStream.pipe(new ResolveTransform(this))
+            .pipe(new AnalyzeTransform(this));
 
     // _dependenciesProcessingStream: Pipe the dependencies stream through...
     //   1. The vinyl loading stream, to load file objects from file paths
-    //   1. The resolver stream, to resolve each loaded file for the analyzer
+    //   2. The resolver stream, to resolve each loaded file for the analyzer
     this._dependenciesProcessingStream =
         this._dependenciesStream.pipe(new VinylReaderTransform())
-            .pipe(new ResolveStream(this));
+            .pipe(new ResolveTransform(this));
   }
 
   /**
@@ -210,8 +211,7 @@ export class BuildAnalyzer {
   }
 
   /**
-   * Resolve a loaded file for our analyzer's loader so that analysis is able to
-   * continue.
+   * Resolve a file in our loader so that the analyzer can read it.
    */
   resolveFile(file: File) {
     const filePath = file.path;
