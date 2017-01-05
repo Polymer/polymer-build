@@ -111,11 +111,11 @@ const htmlMinifier = require('gulp-html-minifier');
 const mergeStream = require('merge-stream');
 
 const sourcesStream = polymerProject.sources()
-  .pipe(polymerProject.splitHtml())
+  .pipe(project.splitHtml())
   .pipe(gulpif(/\.js$/, uglify()))
   .pipe(gulpif(/\.css$/, cssSlam()))
   .pipe(gulpif(/\.html$/, htmlMinifier()))
-  .pipe(polymerProject.rejoinHtml());
+  .pipe(project.rejoinHtml());
 
 // Create a build pipeline to write our dependencies & optimized sources streams to the 'build/' dir
 // (not shown: project.dependencies() can also be split & optimized)
@@ -137,7 +137,7 @@ const generateServiceWorker = require('polymer-build').generateServiceWorker;
 
 generateServiceWorker({
   buildRoot: 'build/',
-  project: polymerProject,
+  project: project,
   bundled: true // set if `polymerProject.bundler` was used
   swPrecacheConfig: {
     // See https://github.com/GoogleChrome/sw-precache#options-parameter for all supported options
@@ -171,6 +171,7 @@ addServiceWorker({
 Sometimes you'll want to pipe a build to multiple destinations. `forkStream()` creates a new stream that copies the original stream, cloning all files that pass through it.
 
 ```js
+const gulp = require('gulp');
 const mergeStream = require('merge-stream');
 const forkStream = require('polymer-build').forkStream;
 
@@ -179,12 +180,12 @@ const buildStream = mergeStream(project.sources(), project.dependencies());
 
 // Fork your build stream to write directly to the 'build/unbundled' dir
 const unbundledBuildStream = forkStream(buildStream)
-  .pipe(dest('build/unbundled'));
+  .pipe(gulp.dest('build/unbundled'));
 
 // Fork your build stream to bundle your application and write to the 'build/bundled' dir
 const bundledBuildStream = forkStream(buildStream)
-  .pipe(polymerProject.bundler)
-  .pipe(dest('build/bundled'));
+  .pipe(project.bundler)
+  .pipe(gulp.dest('build/bundled'));
 ```
 
 
