@@ -1,6 +1,6 @@
 {
   "name": "polymer-build",
-  "version": "0.6.0-alpha.3",
+  "version": "0.6.0",
   "description": "A library of Gulp build tasks",
   "main": "lib/polymer-build.js",
   "typings": "lib/polymer-build.d.ts",
@@ -8,7 +8,7 @@
     "lint": "gulp lint",
     "build": "gulp build",
     "test": "gulp test",
-    "prepublish": "gulp lint test",
+    "prepublish": "gulp lint && gulp test",
     "format": "find src/ test/ -iname '*.ts' -o -iname '*.js' | xargs clang-format --style=file -i"
   },
   "repository": {
