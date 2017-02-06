@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 
 <!-- List New Changes Here -->
-
 * `project.splitHtml()` & `project.rejoinHtml()` methods have been pulled off of `PolymerProject` so that multiple streams can split/rejoin in parallel. See [the new README section on `HTMLSplitter`](https://github.com/Polymer/polymer-build#extracting-inlined-cssjs) for updated instructions on how to split/rejoin inline scripts and styles in your build stream.
 
+## [0.7.1] - 2017-02-03
+
+* Fix issue where larger projects would cause the sources stream to hang.
 
 ## [0.7.0] - 2017-01-31
 
