@@ -29,8 +29,8 @@
     "multipipe": "^1.0.2",
     "parse5": "^2.2.2",
     "plylog": "^0.4.0",
-    "polymer-analyzer": "2.0.0-alpha.20",
-    "polymer-project-config": "^1.2.0",
+    "polymer-analyzer": "2.0.0-alpha.23",
+    "polymer-project-config": "^2.0.0",
     "sw-precache": "^4.2.0",
     "vinyl": "^1.1.1",
     "vinyl-fs": "^2.4.3",
@@ -56,7 +56,7 @@
     "sinon": "^1.17.6",
     "temp": "^0.8.3",
     "tslint": "^3.15.1",
-    "typescript": "^2.0.2",
+    "typescript": "^2.2.0",
     "vinyl-fs-fake": "^1.1.0"
   }
 }
