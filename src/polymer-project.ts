@@ -17,7 +17,7 @@ import {ProjectConfig, ProjectOptions} from 'polymer-project-config';
 import {src as vinylSrc} from 'vinyl-fs';
 
 import {BuildAnalyzer} from './analyzer';
-import {Bundler} from './bundle';
+import {BuildBundler} from './bundle';
 
 const logger = logging.getLogger('polymer-project');
 
@@ -26,7 +26,7 @@ export class PolymerProject {
   config: ProjectConfig;
 
   /**
-   * A `Transform` stream that runs Hydrolysis analysis on the files. It
+   * A `Transform` stream that uses polymer-analyzer to analyze the files. It
    * can be used to get information on dependencies and fragments for the
    * project once the source & dependency streams have been piped into it.
    */
@@ -40,7 +40,7 @@ export class PolymerProject {
    *
    * (NOTE: The analyzer stream must be in the pipeline somewhere before this.)
    */
-  bundler: Bundler;
+  bundler: BuildBundler;
 
   constructor(config: ProjectConfig|ProjectOptions|string) {
     if (config.constructor.name === 'ProjectConfig') {
@@ -54,7 +54,7 @@ export class PolymerProject {
     logger.debug(`build config loaded:`, this.config);
 
     this.analyzer = new BuildAnalyzer(this.config);
-    this.bundler = new Bundler(this.config, this.analyzer);
+    this.bundler = new BuildBundler(this.config, this.analyzer);
   }
 
   /**

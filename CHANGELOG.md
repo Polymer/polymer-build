@@ -9,20 +9,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 <!-- List New Changes Here -->
 * `project.splitHtml()` & `project.rejoinHtml()` methods have been pulled off of `PolymerProject` so that multiple streams can split/rejoin in parallel. See [the new README section on `HTMLSplitter`](https://github.com/Polymer/polymer-build#extracting-inlined-cssjs) for updated instructions on how to split/rejoin inline scripts and styles in your build stream.
+* Completed the migration away from `hydrolysis` to `polymer-analyzer` and `vulcanize` to `polymer-bundler`.
 
 ## [0.7.1] - 2017-02-03
-
 * Fix issue where larger projects would cause the sources stream to hang.
 
 ## [0.7.0] - 2017-01-31
 
 * `BuildAnalyzer.sources` & `BuildAnalyzer.dependencies` are now `BuildAnalyzer.sources()` & `BuildAnalyzer.dependencies()`, respectively. This change only affects uses who are importing and/or using the `BuildAnalyzer` class directly.
 * Fix issue where files were being loaded immediately, before the build stream was started.
-* Fix issue where missing source files were causing silent stream failures.
 
+<<<<<<< HEAD
 
 ## [0.6.0] - 2017-01-04
+=======
+## [0.6.0] - 2017-01-14
+>>>>>>> master
 
+* Fix issue where missing source files were causing silent stream failures.
 * **Interface Update!** `PolymerProject.analyzer` is no longer a required step in your build pipeline. Instead, analysis happens automatically while it fills the `project.sources()` and `project.dependencies()` streams with your project files. See [the README](/README.md) for updated examples of what build streams look like without the analyzer.
 * **[`merge-stream`](https://www.npmjs.com/package/merge-stream) users:** Update to v1.0.1 or later if you are using `merge-stream` with `polymer-build`. Stream errors do not propagate properly in previous versions of the library, and your build task may silently fail as a result.
 * `StreamAnalyzer` is now `BuildAnalyzer` (since it is no longer a stream). This change only affects uses who are importing and/or using `StreamAnalyzer` directly from the `polymer-build` module.
@@ -79,4 +83,3 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 * Generate `.d.ts` files for typescript users.
-
