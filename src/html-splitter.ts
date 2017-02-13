@@ -89,7 +89,7 @@ export class HtmlSplitter {
 /**
  * Represents a file that is split into multiple files.
  */
-class SplitFile {
+export class SplitFile {
   path: string;
   parts: Map<string, string> = new Map();
   outstandingPartCount = 0;
