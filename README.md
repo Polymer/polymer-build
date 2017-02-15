@@ -92,8 +92,8 @@ const sourcesStream = project.sources()
   .pipe(sourcesHtmlSplitter.split()) // split inline JS & CSS out into individual .js & .css files
   .pipe(gulpif(/\.js$/, uglify()))
   .pipe(gulpif(/\.css$/, cssSlam()))
-  .pipe(gulpif(/\.html$/, htmlMinifier())) // rejoins those files back into their original location
-  .pipe(sourcesHtmlSplitter.rejoin());
+  .pipe(gulpif(/\.html$/, htmlMinifier())) 
+  .pipe(sourcesHtmlSplitter.rejoin()); // rejoins those files back into their original location
 
 // NOTE: If you want to split/rejoin your dependencies stream as well, you'll need to create a new HtmlSplitter for that stream.
 ```
