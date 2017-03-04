@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/Polymer/polymer-build#readme",
   "dependencies": {
+    "@types/node": "^4.2.3",
     "@types/parse5": "^2.2.32",
     "@types/vinyl": "^1.1.29",
     "@types/vinyl-fs": "0.0.28",
