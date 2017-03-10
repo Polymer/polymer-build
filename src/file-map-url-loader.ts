@@ -34,9 +34,6 @@ export class FileMapUrlLoader implements UrlLoader {
   }
 
   async load(url: string): Promise<string> {
-    if (url.startsWith('/')) {
-      url = url.substring(1);
-    }
     const file = this.files.get(url)!;
 
     if (file == null) {
