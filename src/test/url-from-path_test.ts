@@ -18,18 +18,18 @@ import {assert} from 'chai';
 import {urlFromPath} from '../path-transformers';
 
 const WindowsRootPath = 'C:\\Users\\TEST_USER\\TEST_ROOT';
-const MacRootPath = '/Users/TEST_USER/TEST_ROOT';
-const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+const PosixRootPath = '/Users/TEST_USER/TEST_ROOT';
+const ProcessPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
 
 suite('urlFromPath()', () => {
 
   afterEach(() => {
-    Object.defineProperty(process, 'platform', originalPlatform);
+    Object.defineProperty(process, 'platform', ProcessPlatform);
   });
 
   test('throws error when path is not in root', () => {
-    assert.throws(function() {
-      urlFromPath(MacRootPath, '/some/other/path/shop-app.html');
+    assert.throws(() => {
+      urlFromPath(PosixRootPath, '/some/other/path/shop-app.html');
     });
   });
 
@@ -49,13 +49,15 @@ suite('urlFromPath()', () => {
 
   test('creates a URL path relative to root in a Posix environment', () => {
     Object.defineProperty(process, 'platform', {value: 'ubuntu'});
-    const shortPath = urlFromPath(MacRootPath, MacRootPath + '/shop-app.html');
+    const shortPath =
+        urlFromPath(PosixRootPath, PosixRootPath + '/shop-app.html');
     assert.equal(shortPath, 'shop-app.html');
     const medPath =
-        urlFromPath(MacRootPath, MacRootPath + '/src/shop-app.html');
+        urlFromPath(PosixRootPath, PosixRootPath + '/src/shop-app.html');
     assert.equal(medPath, 'src/shop-app.html');
     const longPath = urlFromPath(
-        MacRootPath, MacRootPath + '/bower_components/app-layout/docs.html');
+        PosixRootPath,
+        PosixRootPath + '/bower_components/app-layout/docs.html');
     assert.equal(longPath, 'bower_components/app-layout/docs.html');
   });
 });
