@@ -19,7 +19,6 @@ import {urlFromPath} from '../path-transformers';
 
 const WindowsRootPath = 'C:\\Users\\TEST_USER\\TEST_ROOT';
 const MacRootPath = '/Users/TEST_USER/TEST_ROOT';
-// const isPlatformWin = /^win/.test(process.platform);
 const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
 
 suite('urlFromPath()', () => {
