@@ -13,6 +13,7 @@
  */
 
 import File = require('vinyl');
+import * as path from 'path';
 import * as parse5 from 'parse5';
 import {Analyzer} from 'polymer-analyzer';
 import {Bundler} from 'polymer-bundler';
@@ -55,7 +56,8 @@ export class BuildBundler extends Transform {
       file: File,
       _encoding: string,
       callback: (error?: any, data?: File) => void): void {
-    this.files.set(file.path, file);
+    const filepath = path.normalize(file.path);
+    this.files.set(urlFromPath(this.config.root, filepath), file);
     callback(null, file);
   }
 

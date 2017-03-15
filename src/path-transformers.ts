@@ -54,11 +54,12 @@ export function urlFromPath(root: string, filepath: string) {
   const isExtendedLengthPath = /^\\\\\?\\/.test(filepath);
   const hasNonAscii = /[^\x00-\x80]+/.test(filepath);
   if (isPlatformWin && !isExtendedLengthPath && !hasNonAscii) {
-    return path.win32.relative(root, filepath).replace(/\\/g, '/');
+    const relative = path.win32.relative(root, filepath).replace(/\\/g, '/');
+    return relative;
   }
 
   // Otherwise, just return the relative path between the two
-  return path.relative(root, filepath);
+  return path.posix.relative(root, filepath);
 }
 
 export function pathFromUrl(root: string, url: string) {
