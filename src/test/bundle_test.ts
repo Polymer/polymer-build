@@ -298,12 +298,12 @@ suite('BuildBundler', () => {
 
     const addHeaders = new FileTransform((file) => {
       if (path.extname(file.path) === '.html') {
-        file.contents = Buffer.from(
+        file.contents = new Buffer(
             `<!-- ${path.basename(file.path)} -->\n${file.contents}`);
       }
       if (path.extname(file.path).match(/^\.(js|css)$/)) {
         file.contents =
-            Buffer.from(`/* ${path.basename(file.path)} */\n${file.contents}`);
+            new Buffer(`/* ${path.basename(file.path)} */\n${file.contents}`);
       }
       return file;
     });
@@ -355,11 +355,11 @@ suite('BuildBundler', () => {
       const stream = new FileStream([
         new File({
           path: 'C:\\src\\my-app\\index.html',
-          contents: Buffer.from('<!-- index.html -->')
+          contents: new Buffer('<!-- index.html -->')
         }),
         new File({
           path: 'C:\\src\\my-app\\shell.html',
-          contents: Buffer.from('<!-- shell.html -->')
+          contents: new Buffer('<!-- shell.html -->')
         }),
       ]);
       const bundlerPipe = stream.pipe(bundler);
