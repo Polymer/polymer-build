@@ -53,17 +53,8 @@ export function urlFromPath(root: string, filepath: string) {
   const isPlatformWin = /^win/.test(process.platform);
   const isExtendedLengthPath = /^\\\\\?\\/.test(filepath);
   const hasNonAscii = /[^\x00-\x80]+/.test(filepath);
-  const stack = (() => {
-    try {
-      throw new Error('meh');
-    } catch (e) {
-      return e.stack;
-    }
-  })();
   if (isPlatformWin && !isExtendedLengthPath && !hasNonAscii) {
     const relative = path.win32.relative(root, filepath).replace(/\\/g, '/');
-    console.log(`HEY WHATSUP ${root} is root and ${filepath
-    } is filepath and ${relative} is relative @ ${stack}`);
     return relative;
   }
 

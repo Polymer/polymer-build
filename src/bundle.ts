@@ -57,7 +57,6 @@ export class BuildBundler extends Transform {
       _encoding: string,
       callback: (error?: any, data?: File) => void): void {
     const filepath = path.normalize(file.path);
-    console.log(filepath);
     this.files.set(urlFromPath(this.config.root, filepath), file);
     callback(null, file);
   }
@@ -83,7 +82,6 @@ export class BuildBundler extends Transform {
           urlFromPath(this.config.root, this.config.shell));
     }
     const bundleEntrypoints = Array.from(this.config.allFragments);
-    console.log(this.config);
     const docCollection = await this._bundler.bundle(
         bundleEntrypoints.map(f => urlFromPath(this.config.root, f)), strategy);
     const contentsMap = new Map();

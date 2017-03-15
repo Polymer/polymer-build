@@ -339,7 +339,7 @@ suite('BuildBundler', () => {
       process.cwd = processCwd;
     });
 
-    test.skip('bundler converts Windows paths for its loader', async() => {
+    test('bundler converts Windows paths for its loader', async() => {
       Object.defineProperty(process, 'platform', {value: 'windows'});
       process.cwd = () => 'C:\\src\\my-app';
       const config = new ProjectConfig({
@@ -371,7 +371,8 @@ suite('BuildBundler', () => {
                 reject(err);
               });
             }))();
-      console.log(bundler);
+      assert(bundler.files.has('index.html'));
+      assert(bundler.files.has('shell.html'));
     });
   });
 });
