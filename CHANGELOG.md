@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 <!-- List New Changes Here -->
 
-## [0.8.5] - 2017-03-15
+## [0.9.0] - 2017-03-15
 
-* PolymerProject's `bundler` property is now a `bundler()` method, returning a new BuildBundler stream on each call.  This is to support parallel pipelines using bundler.
+* [breaking] PolymerProject's `bundler` property is now a `bundler()` method, returning a new BuildBundler stream on each call.  This is to support parallel pipelines using bundler.
 
 ## [0.8.4] - 2017-03-04
 
