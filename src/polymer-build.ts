@@ -5,5 +5,6 @@ export {BuildBundler} from './bundle';
 export {forkStream} from './fork-stream';
 export {HtmlSplitter} from './html-splitter';
 export {PolymerProject} from './polymer-project';
+export {addPushManifest, generatePushManifest} from './push-manifest';
 export {addServiceWorker, generateServiceWorker} from './service-worker';
 export {AddServiceWorkerOptions} from './service-worker';

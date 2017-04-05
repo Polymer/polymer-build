@@ -120,7 +120,7 @@ mergeStream(project.sources(), project.dependencies())
 ```
 
 
-### Generating Service Workers
+### Generating a Service Worker
 
 #### generateServiceWorker()
 
@@ -154,6 +154,40 @@ Like `generateServiceWorker()`, but writes the generated service worker to the f
 const addServiceWorker = require('polymer-build').addServiceWorker;
 
 addServiceWorker({
+  buildRoot: 'build/',
+  project: project,
+}).then(() => { // ...
+```
+
+
+### Generating a Push Manifest
+
+Polymer-Build can automatically generate a [push manifest](https://github.com/GoogleChrome/http2-push-manifest) for your application. This JSON file can be read by your http2 push-enabled web server to more easily construct the appropriate `Link: <URL>; rel=preload; as=<TYPE>` headers(s) for http2 push/preload.
+
+> **Note:** Push manifests can only be generated for app-shell projects (projects that define a shell and fragments). The manifest describes the following behavior: Requesting the shell should push any shell dependencies as well. Requesting a fragment should push any dependencies of that fragment *that were not already pushed by the shell.*
+
+
+#### generatePushManifest()
+
+`generatePushManifest()` will generate a push manifest for your application.
+
+```js
+const generatePushManifest = require('polymer-build').generatePushManifest;
+
+generatePushManifest({
+  buildRoot: 'build/',
+  project: project,
+}).then(() => { // ...
+```
+
+#### addPushManifest()
+
+Like `generatePushManifest()`, but writes the generated service worker to the file path you specify in the `path` option ("push-manifest.json" by default).
+
+```js
+const addPushManifest = require('polymer-build').addPushManifest;
+
+addPushManifest({
   buildRoot: 'build/',
   project: project,
 }).then(() => { // ...

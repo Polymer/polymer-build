@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!--## Unreleased-->
 
 <!-- List New Changes Here -->
+* New Feature: add automatic [push manifest](https://github.com/GoogleChrome/http2-push-manifest) generation for HTTP2 push-enabled servers.
 
 ## [0.9.1] - 2017-03-20
 
