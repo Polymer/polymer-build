@@ -28,7 +28,22 @@ export interface AddPushManifestOptions {
 }
 
 // Push Manifest Types Definitions
-export type LinkType = 'document' | 'script' | 'style';
+export type LinkType = 'document' | 'script' | 'style' | 'image' | 'font';
+const extensionToTypeMapping: {[extname: string]: LinkType} = {
+  '.css': 'style',
+  '.gif': 'image',
+  '.html': 'document',
+  '.png': 'image',
+  '.jpg': 'image',
+  '.js': 'script',
+  '.json': 'script',
+  '.svg': 'image',
+  '.webp': 'image',
+  '.woff': 'font',
+  '.woff2': 'font'
+};
+
+
 export interface PushManifestEntry {
   [id: string]: {
     type?: LinkType,
@@ -68,16 +83,7 @@ async function analyzeFileForImportUrls(
 function
 getLinkTypeFromUrl(url: string):
     LinkType|undefined {
-      switch (path.extname(url)) {
-        case '.html':
-          return 'document';
-        case '.js':
-          return 'script';
-        case '.css':
-          return 'style';
-        default:
-          return undefined;
-      }
+      return extensionToTypeMapping[path.extname(url)] || undefined;
     }
 
 /**
@@ -133,9 +139,9 @@ generatePushManifest(options: AddPushManifestOptions):
     }
 
 /**
- * Returns a promise that resolves when a service worker has been generated
- * and written to the build directory. This uses generateServiceWorker() to
- * generate a service worker, which it then writes to the file system based on
+ * Returns a promise that resolves when a push manifest has been generated
+ * and written to the build directory. This uses generatePushManifest() to
+ * generate a push manifest, which it then writes to the file system based on
  * the buildRoot & path (if provided) options.
  */
 export async function
