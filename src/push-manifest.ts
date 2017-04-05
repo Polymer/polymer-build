@@ -23,7 +23,6 @@ import {PolymerProject} from './polymer-project';
 export interface AddPushManifestOptions {
   project: PolymerProject;
   buildRoot: string;
-  bundled?: boolean;
   path?: string;
 }
 
@@ -42,15 +41,18 @@ const extensionToTypeMapping: {[extname: string]: LinkType} = {
   '.woff': 'font',
   '.woff2': 'font'
 };
-
-
 export interface PushManifestEntry {
-  [id: string]: {
+  [dependencyAbsoluteUrl: string]: {
     type?: LinkType,
+    // NOTE(fks) 04-05-2017: Only weight=1 is supported by browsers at the
+    // moment. When support is added, we can add automatic weighting and support
+    // multiple numbers.
     weight: 1,
   };
 }
-export interface PushManifest { [id: string]: PushManifestEntry; }
+export interface PushManifest {
+  [fragmentAbsoluteUrl: string]: PushManifestEntry;
+}
 
 
 /**
@@ -74,69 +76,64 @@ async function analyzeFileForImportUrls(
         }
       }
       return analyzedImportUrls;
-    }
+    };
 
 /**
  * Gets a link type from a file URL. Useful for generating a PushManifestEntry
  * and needed for the "as=" value on Link headers.
  */
-function
-getLinkTypeFromUrl(url: string):
-    LinkType|undefined {
-      return extensionToTypeMapping[path.extname(url)] || undefined;
-    }
+function getLinkTypeFromUrl(url: string): LinkType|undefined {
+  return extensionToTypeMapping[path.extname(url)] || undefined;
+};
 
 /**
  * Generate a PushManifestEntry from an array of URLs.
  */
-function
-generatePushManifestEntries(urls: string[]):
-    PushManifestEntry {
-      const newEntry: PushManifestEntry = {};
-      for (const url of urls) {
-        newEntry[url] = {type: getLinkTypeFromUrl(url), weight: 1};
-      }
-      return newEntry;
-    }
+function generatePushManifestEntries(urls: string[]): PushManifestEntry {
+  const newEntry: PushManifestEntry = {};
+  for (const url of urls) {
+    newEntry[url] = {type: getLinkTypeFromUrl(url), weight: 1};
+  }
+  return newEntry;
+};
 
 /**
  * Returns a promise that resolves with a generated push manifest, based off of
  * the options provided.
  */
-export async function
-generatePushManifest(options: AddPushManifestOptions):
+export async function generatePushManifest(options: AddPushManifestOptions):
     Promise<PushManifest> {
-      console.assert(!!options, '`project` & `buildRoot` options are required');
-      console.assert(!!options.project, '`project` option is required');
-      console.assert(!!options.buildRoot, '`buildRoot` option is required');
+  console.assert(!!options, '`project` & `buildRoot` options are required');
+  console.assert(!!options.project, '`project` option is required');
+  console.assert(!!options.buildRoot, '`buildRoot` option is required');
 
-      const pushManifest: any = {};
-      const analyzer = new Analyzer({
-        urlLoader: new FSUrlLoader(options.buildRoot),
-      });
+  const pushManifest: any = {};
+  const analyzer = new Analyzer({
+    urlLoader: new FSUrlLoader(options.buildRoot),
+  });
 
-      // Generate the dependencies to push for the shell
-      const relativeShellUrl = urlFromPath(
-          options.project.config.root, options.project.config.shell);
-      const shellImportUrls =
-          await analyzeFileForImportUrls(analyzer, relativeShellUrl);
-      pushManifest[relativeShellUrl] =
-          generatePushManifestEntries(Array.from(shellImportUrls));
+  // Generate the dependencies to push for the shell
+  const absoluteShellUrl =
+      urlFromPath(options.project.config.root, options.project.config.shell);
+  const shellImportUrls =
+      await analyzeFileForImportUrls(analyzer, absoluteShellUrl);
+  pushManifest[absoluteShellUrl] =
+      generatePushManifestEntries(Array.from(shellImportUrls));
 
-      // Generate the dependencies to push for each fragment.
-      // Make sure that any duplicates from the shell dependencies list are
-      // removed.
-      for (const fragment of options.project.config.fragments) {
-        const relativeFragmentUrl =
-            urlFromPath(options.project.config.root, fragment);
-        const fragmentImportUrls = await analyzeFileForImportUrls(
-            analyzer, relativeFragmentUrl, shellImportUrls);
-        pushManifest[relativeFragmentUrl] =
-            generatePushManifestEntries(Array.from(fragmentImportUrls));
-      }
+  // Generate the dependencies to push for each fragment.
+  // Make sure that any duplicates from the shell dependencies list are
+  // removed.
+  for (const fragment of options.project.config.fragments) {
+    const absoluteFragmentUrl =
+        urlFromPath(options.project.config.root, fragment);
+    const fragmentImportUrls = await analyzeFileForImportUrls(
+        analyzer, absoluteFragmentUrl, shellImportUrls);
+    pushManifest[absoluteFragmentUrl] =
+        generatePushManifestEntries(Array.from(fragmentImportUrls));
+  }
 
-      return pushManifest;
-    }
+  return pushManifest;
+}
 
 /**
  * Returns a promise that resolves when a push manifest has been generated
@@ -144,12 +141,12 @@ generatePushManifest(options: AddPushManifestOptions):
  * generate a push manifest, which it then writes to the file system based on
  * the buildRoot & path (if provided) options.
  */
-export async function
-addPushManifest(options: AddPushManifestOptions): Promise<{}> {
+export async function addPushManifest(options: AddPushManifestOptions):
+    Promise<void> {
   const fileContents = await generatePushManifest(options);
   const fileContentsBuffer =
       new Buffer(JSON.stringify(fileContents, undefined, '  '));
-  return new Promise((resolve, reject) => {
+  return await(new Promise<void>((resolve, reject) => {
     const pushManifestPath =
         path.join(options.buildRoot, options.path || 'push-manifest.json');
     writeFile(pushManifestPath, fileContentsBuffer, (err: Error) => {
@@ -159,5 +156,5 @@ addPushManifest(options: AddPushManifestOptions): Promise<{}> {
         resolve();
       }
     });
-  });
+  }));
 }

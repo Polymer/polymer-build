@@ -105,7 +105,7 @@ You can add splitters to any part of your build stream. We recommend using them 
 
 #### project.bundler()
 
-A stream that combines the files in your application to reduce the number of frontend requests needed. This can be a great way to [improve performance](https://developer.yahoo.com/performance/rules.html#num_http) when HTTP2/Push is not available.
+A stream that combines the files in your application to reduce the number of frontend requests needed. This can be a great way to [improve performance](https://developer.yahoo.com/performance/rules.html#num_http) when HTTP/2 Push is not available.
 
 By default, the bundler will create one "shared-bundle.html" containing all shared dependencies. You can optimize even further by defining "fragments" in your project options. Fragments are lazy loaded parts of the application, typically views and other elements loaded on-demand. When fragments are defined, the bundler is able to create smaller bundles containing code that is only required for specific fragments.
 
@@ -160,16 +160,16 @@ addServiceWorker({
 ```
 
 
-### Generating a Push Manifest
+### Generating an HTTP/2 Push Manifest
 
-Polymer-Build can automatically generate a [push manifest](https://github.com/GoogleChrome/http2-push-manifest) for your application. This JSON file can be read by your http2 push-enabled web server to more easily construct the appropriate `Link: <URL>; rel=preload; as=<TYPE>` headers(s) for http2 push/preload.
+`polymer-build` can automatically generate a [push manifest](https://github.com/GoogleChrome/http2-push-manifest) for your application. This JSON file can be read by your HTTP/2 push-enabled web server to more easily construct the appropriate `Link: <URL>; rel=preload; as=<TYPE>` headers(s) for HTTP/2 push/preload.
 
 > **Note:** Push manifests can only be generated for app-shell projects (projects that define a shell and fragments). The manifest describes the following behavior: Requesting the shell should push any shell dependencies as well. Requesting a fragment should push any dependencies of that fragment *that were not already pushed by the shell.*
 
 
 #### generatePushManifest()
 
-`generatePushManifest()` will generate a push manifest for your application.
+`generatePushManifest()` will return a push manifest generated for your application.
 
 ```js
 const generatePushManifest = require('polymer-build').generatePushManifest;
@@ -177,7 +177,7 @@ const generatePushManifest = require('polymer-build').generatePushManifest;
 generatePushManifest({
   buildRoot: 'build/',
   project: project,
-}).then(() => { // ...
+}).then((pushManifest) => { // ...
 ```
 
 #### addPushManifest()
