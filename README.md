@@ -164,33 +164,22 @@ addServiceWorker({
 
 `polymer-build` can automatically generate a [push manifest](https://github.com/GoogleChrome/http2-push-manifest) for your application. This JSON file can be read by your HTTP/2 push-enabled web server to more easily construct the appropriate `Link: <URL>; rel=preload; as=<TYPE>` headers(s) for HTTP/2 push/preload.
 
-> **Note:** Push manifests can only be generated for app-shell projects (projects that define a shell and fragments). The manifest describes the following behavior: Requesting the shell should push any shell dependencies as well. Requesting a fragment should push any dependencies of that fragment *that were not already pushed by the shell.*
+The generated push manifest describes the following behavior: Requesting the shell should push any shell dependencies as well. Requesting a fragment should push any dependencies of that fragment *that were not already pushed by the shell.* If no shell was defined for your build, `polymer-build` will use the application entrypoint URL instead (default: `index.html`).
 
 
-#### generatePushManifest()
+#### project.addPushManifest()
 
-`generatePushManifest()` will return a push manifest generated for your application.
+This method will return a stream that injects a new push manifest into your build (default: `push-manifest.json`). The push manifest is based off the application import graph, so make sure that this stream is added after all changes to the application source code.
 
-```js
-const generatePushManifest = require('polymer-build').generatePushManifest;
-
-generatePushManifest({
-  buildRoot: 'build/',
-  project: project,
-}).then((pushManifest) => { // ...
-```
-
-#### addPushManifest()
-
-Like `generatePushManifest()`, but writes the generated service worker to the file path you specify in the `path` option ("push-manifest.json" by default).
+It optionally takes a `filePath` argument (relative to your application root) to configure the name of the generated file.
 
 ```js
-const addPushManifest = require('polymer-build').addPushManifest;
+const gulp = require('gulp');
+const mergeStream = require('merge-stream');
 
-addPushManifest({
-  buildRoot: 'build/',
-  project: project,
-}).then(() => { // ...
+mergeStream(project.sources(), project.dependencies())
+  .pipe(project.addPushManifest())
+  .pipe(gulp.dest('build/'));
 ```
 
 
