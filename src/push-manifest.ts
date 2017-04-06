@@ -14,7 +14,7 @@
 
 import {writeFile} from 'fs';
 import * as path from 'path';
-import {Analyzer, FSUrlLoader} from 'polymer-analyzer';
+import {Analyzer, FSUrlLoader, Import} from 'polymer-analyzer';
 
 import {urlFromPath} from './path-transformers';
 import {PolymerProject} from './polymer-project';
@@ -26,9 +26,49 @@ export interface AddPushManifestOptions {
   path?: string;
 }
 
-// Push Manifest Types Definitions
-export type LinkType = 'document' | 'script' | 'style' | 'image' | 'font';
-const extensionToTypeMapping: {[extname: string]: LinkType} = {
+/**
+ * Push Manifest Types Definitions
+ * A push manifest is a JSON object representing relative application URL and
+ * the resources that should be pushed when those URLs are requested by the
+ * server. Below is a example of this data format:
+ *
+ *       {
+ *         "index.html": {       // PushManifestEntryCollection
+ *           "/css/app.css": {   // PushManifestEntry
+ *             "type": "style",  // ResourceType
+ *             "weight": 1
+ *           },
+ *           ...
+ *         },
+ *         "page.html": {
+ *           "/css/page.css": {
+ *             "type": "style",
+ *             "weight": 1
+ *           },
+ *           ...
+ *         }
+ *       }
+ *
+ * NOTE(fks) 04-05-2017: Only weight=1 is supported by browsers at the moment.
+ * When support is added, we can add automatic weighting and support multiple
+ * numbers.
+ */
+export type ResourceType = 'document' | 'script' | 'style' | 'image' | 'font';
+export interface PushManifestEntry {
+  type?: ResourceType;
+  weight: 1;
+}
+export interface PushManifestEntryCollection {
+  [dependencyAbsoluteUrl: string]: PushManifestEntry;
+}
+export interface PushManifest {
+  [requestAbsoluteUrl: string]: PushManifestEntryCollection;
+}
+
+/**
+ * A mapping of file extensions and their default resource type.
+ */
+const extensionToTypeMapping: {[extname: string]: ResourceType} = {
   '.css': 'style',
   '.gif': 'image',
   '.html': 'document',
@@ -41,72 +81,106 @@ const extensionToTypeMapping: {[extname: string]: LinkType} = {
   '.woff': 'font',
   '.woff2': 'font'
 };
-export interface PushManifestEntry {
-  [dependencyAbsoluteUrl: string]: {
-    type?: LinkType,
-    // NOTE(fks) 04-05-2017: Only weight=1 is supported by browsers at the
-    // moment. When support is added, we can add automatic weighting and support
-    // multiple numbers.
+
+/**
+ * Get the default resource type for a file based on its extension.
+ */
+function getResourceTypeFromUrl(url: string): ResourceType|undefined {
+  return extensionToTypeMapping[path.extname(url)] || undefined;
+}
+
+/**
+ * Get the resource type for an import, handling special import types and
+ * falling back to getResourceTypeFromUrl() if none exist.
+ */
+function getResourceTypeFromImport(importFeature: Import): ResourceType|
+    undefined {
+  const importTagName = importFeature.astNode.tagName;
+  const isHtmlAstNode = !!importTagName;
+
+  // Only HTML has the ability to define custom resource types for an import.
+  // If we are looking at an import coming from JS or CSS, we can assume its
+  // resource type from the file name.
+  if (!isHtmlAstNode) {
+    return getResourceTypeFromUrl(importFeature.url);
+  }
+
+  // If the tag is known to always import a single resource type, return that.
+  if (importTagName === 'script') {
+    return 'script';
+  }
+  if (importTagName === 'img') {
+    return 'image';
+  }
+
+  // Check <link> tags for a "rel" attribute that may dictate the resource type.
+  if (importTagName === 'link') {
+    const importAttributes = importFeature.astNode.attrs;
+    const relAttributeData = Array.isArray(importAttributes) &&
+        importAttributes.find((attr) => attr.name === 'rel');
+    const relAttribute = relAttributeData && relAttributeData.value;
+    if (relAttribute.indexOf('stylesheet') > -1) {
+      return 'style';
+    }
+    if (relAttribute.indexOf('import') > -1) {
+      return 'document';
+    }
+    if (relAttribute.indexOf('icon') > -1) {
+      return 'image';
+    }
+  }
+
+  // No custom resource type was detected for this import.
+  // Default to the file extension.
+  return getResourceTypeFromUrl(importFeature.url);
+};
+
+/**
+ * Create a PushManifestEntry from an analyzer Import.
+ */
+function createPushEntryFromImport(importFeature: Import): PushManifestEntry {
+  return {
+    type: getResourceTypeFromImport(importFeature),
     weight: 1,
   };
 }
-export interface PushManifest {
-  [fragmentAbsoluteUrl: string]: PushManifestEntry;
-}
-
 
 /**
- * Analyze the given URL and return a unique Set of import URLs analyzed from
- * that root.
+ * Analyze the given URL and resolve with a collection of push manifest entries
+ * to be added to the overall push manifest.
  */
-async function analyzeFileForImportUrls(
-    analyzer: Analyzer, url: string, ignoreUrls?: Set<string>):
-    Promise<Set<string>> {
+async function generatePushManifestEntryForUrl(
+    analyzer: Analyzer, url: string, ignoreUrls?: string[]):
+    Promise<PushManifestEntryCollection> {
       const analyzedDocument = await analyzer.analyze(url);
       const analyzedImports = analyzedDocument.getByKind(
           'import', {externalPackages: true, imported: true});
-      const analyzedImportUrls = new Set();
+      const analyzedImportUrls: PushManifestEntryCollection = {};
       function shouldIgnoreFile(url: string) {
-        return ignoreUrls && ignoreUrls.has(url);
+        return ignoreUrls && ignoreUrls.indexOf(url) > -1;
       }
 
       for (const analyzedImport of analyzedImports) {
-        if (!shouldIgnoreFile(analyzedImport.url)) {
-          analyzedImportUrls.add(analyzedImport.url);
+        const analyzedImportUrl = analyzedImport.url;
+        const analyzedImportEntry = analyzedImportUrls[analyzedImportUrl];
+        if (!shouldIgnoreFile(analyzedImportUrl) && !analyzedImportEntry) {
+          analyzedImportUrls[analyzedImportUrl] =
+              createPushEntryFromImport(analyzedImport);
         }
       }
+
       return analyzedImportUrls;
     };
 
 /**
- * Gets a link type from a file URL. Useful for generating a PushManifestEntry
- * and needed for the "as=" value on Link headers.
- */
-function getLinkTypeFromUrl(url: string): LinkType|undefined {
-  return extensionToTypeMapping[path.extname(url)] || undefined;
-};
-
-/**
- * Generate a PushManifestEntry from an array of URLs.
- */
-function generatePushManifestEntries(urls: string[]): PushManifestEntry {
-  const newEntry: PushManifestEntry = {};
-  for (const url of urls) {
-    newEntry[url] = {type: getLinkTypeFromUrl(url), weight: 1};
-  }
-  return newEntry;
-};
-
-/**
- * Returns a promise that resolves with a generated push manifest, based off of
- * the options provided.
+ * Resolve with a push manifest generated for the application build located at
+ * buildRoot.
  */
 export async function generatePushManifest(options: AddPushManifestOptions):
     Promise<PushManifest> {
   console.assert(!!options, '`project` & `buildRoot` options are required');
   console.assert(!!options.project, '`project` option is required');
   console.assert(!!options.buildRoot, '`buildRoot` option is required');
-
   const pushManifest: any = {};
   const analyzer = new Analyzer({
     urlLoader: new FSUrlLoader(options.buildRoot),
@@ -115,21 +189,16 @@ export async function generatePushManifest(options: AddPushManifestOptions):
   // Generate the dependencies to push for the shell
   const absoluteShellUrl =
       urlFromPath(options.project.config.root, options.project.config.shell);
-  const shellImportUrls =
-      await analyzeFileForImportUrls(analyzer, absoluteShellUrl);
   pushManifest[absoluteShellUrl] =
-      generatePushManifestEntries(Array.from(shellImportUrls));
+      await generatePushManifestEntryForUrl(analyzer, absoluteShellUrl);
+  const shellImportUrls = Object.keys(pushManifest[absoluteShellUrl]);
 
   // Generate the dependencies to push for each fragment.
-  // Make sure that any duplicates from the shell dependencies list are
-  // removed.
   for (const fragment of options.project.config.fragments) {
     const absoluteFragmentUrl =
         urlFromPath(options.project.config.root, fragment);
-    const fragmentImportUrls = await analyzeFileForImportUrls(
+    pushManifest[absoluteFragmentUrl] = await generatePushManifestEntryForUrl(
         analyzer, absoluteFragmentUrl, shellImportUrls);
-    pushManifest[absoluteFragmentUrl] =
-        generatePushManifestEntries(Array.from(fragmentImportUrls));
   }
 
   return pushManifest;
