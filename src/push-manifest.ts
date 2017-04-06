@@ -216,8 +216,11 @@ export class AddPushManifest extends Transform {
 
   async generatePushManifest() {
     const pushManifest: any = {};
+    // If an app-shell exists, use that as our main push URL because it has a
+    // reliable URL. Otherwise, support the single entrypoint URL.
+    const mainPushEntrypoint = this.config.shell || this.config.entrypoint;
     // Generate the dependencies to push for the shell
-    const absoluteShellUrl = urlFromPath(this.config.root, this.config.shell);
+    const absoluteShellUrl = urlFromPath(this.config.root, mainPushEntrypoint);
     pushManifest[absoluteShellUrl] =
         await generatePushManifestEntryForUrl(this.analyzer, absoluteShellUrl);
     const shellImportUrls = Object.keys(pushManifest[absoluteShellUrl]);
