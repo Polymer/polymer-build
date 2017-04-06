@@ -12,19 +12,14 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {writeFile} from 'fs';
 import * as path from 'path';
-import {Analyzer, FSUrlLoader, Import} from 'polymer-analyzer';
+import {Analyzer, Import} from 'polymer-analyzer';
+import {ProjectConfig} from 'polymer-project-config';
+import {Transform} from 'stream';
+import File = require('vinyl');
 
 import {urlFromPath} from './path-transformers';
-import {PolymerProject} from './polymer-project';
-
-
-export interface AddPushManifestOptions {
-  project: PolymerProject;
-  buildRoot: string;
-  path?: string;
-}
+import {FileMapUrlLoader} from './file-map-url-loader';
 
 /**
  * Push Manifest Types Definitions
@@ -172,58 +167,66 @@ async function generatePushManifestEntryForUrl(
       return analyzedImportUrls;
     };
 
+
 /**
- * Resolve with a push manifest generated for the application build located at
- * buildRoot.
+ * A stream that reads in files from an application to generate an HTTP2/Push
+ * manifest that gets injected into the stream.
  */
-export async function generatePushManifest(options: AddPushManifestOptions):
-    Promise<PushManifest> {
-  console.assert(!!options, '`project` & `buildRoot` options are required');
-  console.assert(!!options.project, '`project` option is required');
-  console.assert(!!options.buildRoot, '`buildRoot` option is required');
-  const pushManifest: any = {};
-  const analyzer = new Analyzer({
-    urlLoader: new FSUrlLoader(options.buildRoot),
-  });
+export class AddPushManifest extends Transform {
+  files: Map<string, File>;
+  filePath: string;
+  private config: ProjectConfig;
+  private analyzer: Analyzer;
 
-  // Generate the dependencies to push for the shell
-  const absoluteShellUrl =
-      urlFromPath(options.project.config.root, options.project.config.shell);
-  pushManifest[absoluteShellUrl] =
-      await generatePushManifestEntryForUrl(analyzer, absoluteShellUrl);
-  const shellImportUrls = Object.keys(pushManifest[absoluteShellUrl]);
-
-  // Generate the dependencies to push for each fragment.
-  for (const fragment of options.project.config.fragments) {
-    const absoluteFragmentUrl =
-        urlFromPath(options.project.config.root, fragment);
-    pushManifest[absoluteFragmentUrl] = await generatePushManifestEntryForUrl(
-        analyzer, absoluteFragmentUrl, shellImportUrls);
+  constructor(config: ProjectConfig, filePath?: string) {
+    super({objectMode: true});
+    this.files = new Map();
+    this.config = config;
+    this.analyzer = new Analyzer(
+        {urlLoader: new FileMapUrlLoader(this.config.root, this.files)});
+    this.filePath =
+        path.join(this.config.root, filePath || 'push-manifest.json');
   }
 
-  return pushManifest;
-}
+  _transform(
+      file: File,
+      _encoding: string,
+      callback: (error?: any, data?: File) => void): void {
+    this.files.set(urlFromPath(this.config.root, file.path), file);
+    callback(null, file);
+  }
 
-/**
- * Returns a promise that resolves when a push manifest has been generated
- * and written to the build directory. This uses generatePushManifest() to
- * generate a push manifest, which it then writes to the file system based on
- * the buildRoot & path (if provided) options.
- */
-export async function addPushManifest(options: AddPushManifestOptions):
-    Promise<void> {
-  const fileContents = await generatePushManifest(options);
-  const fileContentsBuffer =
-      new Buffer(JSON.stringify(fileContents, undefined, '  '));
-  return await(new Promise<void>((resolve, reject) => {
-    const pushManifestPath =
-        path.join(options.buildRoot, options.path || 'push-manifest.json');
-    writeFile(pushManifestPath, fileContentsBuffer, (err: Error) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  }));
+  async _flush(done: (error?: any) => void) {
+    // Generate a push manifest, and propagate any errors up.
+    let pushManifestContents;
+    try {
+      const pushManifest = await this.generatePushManifest();
+      pushManifestContents = JSON.stringify(pushManifest, undefined, '  ');
+    } catch (err) {
+      done(err);
+      return;
+    }
+    // Push the new push manifest into the stream.
+    this.push(new File({
+      path: this.filePath,
+      contents: new Buffer(pushManifestContents),
+    }));
+    done();
+  }
+
+  async generatePushManifest() {
+    const pushManifest: any = {};
+    // Generate the dependencies to push for the shell
+    const absoluteShellUrl = urlFromPath(this.config.root, this.config.shell);
+    pushManifest[absoluteShellUrl] =
+        await generatePushManifestEntryForUrl(this.analyzer, absoluteShellUrl);
+    const shellImportUrls = Object.keys(pushManifest[absoluteShellUrl]);
+    // Generate the dependencies to push for each fragment.
+    for (const fragment of this.config.fragments) {
+      const absoluteFragmentUrl = urlFromPath(this.config.root, fragment);
+      pushManifest[absoluteFragmentUrl] = await generatePushManifestEntryForUrl(
+          this.analyzer, absoluteFragmentUrl, shellImportUrls);
+    }
+    return pushManifest;
+  }
 }
