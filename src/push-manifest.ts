@@ -91,6 +91,9 @@ function getResourceTypeFromUrl(url: string): ResourceType|undefined {
 function getResourceTypeFromImport(importFeature: Import): ResourceType|
     undefined {
   const importTagName = importFeature.astNode.tagName;
+  // TODO(fks) 04-06-2017: This is a dirty workaround to figure out what kind of
+  // astNode we're dealing with. Update to use a real check once one is
+  // supported by the analyzer.
   const isHtmlAstNode = !!importTagName;
 
   // Only HTML has the ability to define custom resource types for an import.
