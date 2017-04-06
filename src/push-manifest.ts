@@ -221,11 +221,12 @@ export class AddPushManifest extends Transform {
     pushManifest[absoluteShellUrl] =
         await generatePushManifestEntryForUrl(this.analyzer, absoluteShellUrl);
     const shellImportUrls = Object.keys(pushManifest[absoluteShellUrl]);
+    const fragmentIgnoreUrls = [absoluteShellUrl].concat(shellImportUrls);
     // Generate the dependencies to push for each fragment.
     for (const fragment of this.config.fragments) {
       const absoluteFragmentUrl = urlFromPath(this.config.root, fragment);
       pushManifest[absoluteFragmentUrl] = await generatePushManifestEntryForUrl(
-          this.analyzer, absoluteFragmentUrl, shellImportUrls);
+          this.analyzer, absoluteFragmentUrl, fragmentIgnoreUrls);
     }
     return pushManifest;
   }
