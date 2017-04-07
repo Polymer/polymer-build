@@ -86,50 +86,24 @@ function getResourceTypeFromUrl(url: string): ResourceType|undefined {
 
 /**
  * Get the resource type for an import, handling special import types and
- * falling back to getResourceTypeFromUrl() if none exist.
+ * falling back to getResourceTypeFromUrl() if the resource type can't be
+ * detected directly from importFeature.
  */
 function getResourceTypeFromImport(importFeature: Import): ResourceType|
     undefined {
-  const importTagName = importFeature.astNode.tagName;
-  // TODO(fks) 04-06-2017: This is a dirty workaround to figure out what kind of
-  // astNode we're dealing with. Update to use a real check once one is
-  // supported by the analyzer.
-  const isHtmlAstNode = !!importTagName;
-
-  // Only HTML has the ability to define custom resource types for an import.
-  // If we are looking at an import coming from JS or CSS, we can assume its
-  // resource type from the file name.
-  if (!isHtmlAstNode) {
-    return getResourceTypeFromUrl(importFeature.url);
+  const importKinds = importFeature.kinds;
+  if (importKinds.has('css-import') || importKinds.has('html-style')) {
+    return 'style';
   }
-
-  // If the tag is known to always import a single resource type, return that.
-  if (importTagName === 'script') {
+  if (importKinds.has('html-import')) {
+    return 'document';
+  }
+  if (importKinds.has('html-script')) {
     return 'script';
   }
-  if (importTagName === 'img') {
-    return 'image';
-  }
-
-  // Check <link> tags for a "rel" attribute that may dictate the resource type.
-  if (importTagName === 'link') {
-    const importAttributes = importFeature.astNode.attrs;
-    const relAttributeData = Array.isArray(importAttributes) &&
-        importAttributes.find((attr) => attr.name === 'rel');
-    const relAttribute = relAttributeData && relAttributeData.value;
-    if (relAttribute.indexOf('stylesheet') > -1) {
-      return 'style';
-    }
-    if (relAttribute.indexOf('import') > -1) {
-      return 'document';
-    }
-    if (relAttribute.indexOf('icon') > -1) {
-      return 'image';
-    }
-  }
-
-  // No custom resource type was detected for this import.
-  // Default to the file extension.
+  // @NOTE(fks) 04-07-2017: A js-import can actually import multiple types of
+  // resources, so we can't guarentee that it's a script and should instead rely
+  // on the default file-extension mapping.
   return getResourceTypeFromUrl(importFeature.url);
 };
 
