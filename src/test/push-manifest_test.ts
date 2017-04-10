@@ -220,7 +220,7 @@ suite('AddPushManifest', () => {
           weight: 1,
         },
       }
-    }
+    };
 
     testPushManifest(project, null, expectedPushManifest, done);
   });
