@@ -63,25 +63,25 @@ export interface PushManifest {
 /**
  * A mapping of file extensions and their default resource type.
  */
-const extensionToTypeMapping: {[extname: string]: ResourceType} = {
-  '.css': 'style',
-  '.gif': 'image',
-  '.html': 'document',
-  '.png': 'image',
-  '.jpg': 'image',
-  '.js': 'script',
-  '.json': 'script',
-  '.svg': 'image',
-  '.webp': 'image',
-  '.woff': 'font',
-  '.woff2': 'font'
-};
+const extensionToTypeMapping = new Map<string, ResourceType>([
+  ['.css', 'style'],
+  ['.gif', 'image'],
+  ['.html', 'document'],
+  ['.png', 'image'],
+  ['.jpg', 'image'],
+  ['.js', 'script'],
+  ['.json', 'script'],
+  ['.svg', 'image'],
+  ['.webp', 'image'],
+  ['.woff', 'font'],
+  ['.woff2', 'font'],
+]);
 
 /**
  * Get the default resource type for a file based on its extension.
  */
 function getResourceTypeFromUrl(url: string): ResourceType|undefined {
-  return extensionToTypeMapping[path.extname(url)] || undefined;
+  return extensionToTypeMapping.get(path.extname(url));
 }
 
 /**
