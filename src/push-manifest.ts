@@ -127,21 +127,21 @@ async function generatePushManifestEntryForUrl(
       const analyzedDocument = await analyzer.analyze(url);
       const analyzedImports = analyzedDocument.getByKind(
           'import', {externalPackages: true, imported: true});
-      const analyzedImportUrls: PushManifestEntryCollection = {};
+      const pushManifestEntries: PushManifestEntryCollection = {};
       function shouldIgnoreFile(url: string) {
         return ignoreUrls && ignoreUrls.indexOf(url) > -1;
       }
 
       for (const analyzedImport of analyzedImports) {
         const analyzedImportUrl = analyzedImport.url;
-        const analyzedImportEntry = analyzedImportUrls[analyzedImportUrl];
+        const analyzedImportEntry = pushManifestEntries[analyzedImportUrl];
         if (!shouldIgnoreFile(analyzedImportUrl) && !analyzedImportEntry) {
-          analyzedImportUrls[analyzedImportUrl] =
+          pushManifestEntries[analyzedImportUrl] =
               createPushEntryFromImport(analyzedImport);
         }
       }
 
-      return analyzedImportUrls;
+      return pushManifestEntries;
     };
 
 
