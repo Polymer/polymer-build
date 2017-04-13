@@ -31,22 +31,10 @@ const styleMatcher = p.AND(
     p.hasTagName('style'),
     p.OR(p.NOT(p.hasAttr('type')), p.hasAttrValue('type', 'text/css')));
 
-
 /**
- * When compiling ES6 classes down to ES5 we need to include a special form of
- * the webcomponents loader to be compatible with native custom elements. This
- * includes moving the loader script element and all relevent siblings
- * following it into the body so that the Custom Elements ES5 adapter can be
- * properly injected.
- *
- * NOTE(fks) 03-28-2017: Comments are not currently moved to the body, which
- * means relevent comments may be left behind in the head. This is fine for now,
- * but may break if we ever decide to support important metadata in comments
- * (ex: support for defining lazy-imports via HTML comments).
- *
- * TODO(fks) 03-28-2017: Move into polymer-build and add tests.
+ * Wraps `addCustomElementsEs5Adapter()` in a `stream.Transform`.
  */
-export class InjectES5Adapter extends stream.Transform {
+export class CustomElementsEs5AdapterTransformer extends stream.Transform {
   constructor() {
     super({objectMode: true});
   }
@@ -72,25 +60,55 @@ export class InjectES5Adapter extends stream.Transform {
         stream.on('error', reject);
       });
     }
-    if (!webcomponentsLoaderRegex.test(contents)) {
-      callback(null, file);
-      return;
-    }
-    const parsed = parse5.parse(contents);
-    const script = dom5.nodeWalk(parsed, webcomponentsLoaderMatcher);
-    if (!script) {
-      callback(null, file);
-      return;
-    }
 
-    // Collect important dom references & create fragments for injection
-    const correctedFile = file.clone();
-    const headElement = dom5.query(parsed, headMatcher)!;
-    const bodyElement = dom5.query(parsed, bodyMatcher)!;
-    const loaderScriptUrl = dom5.getAttribute(script, 'src')!;
-    const adapterScriptUrl =
-        url.resolve(loaderScriptUrl, 'custom-elements-es5-adapter.js');
-    const es5AdapterScript = parse5.parseFragment(`
+    const updatedContents = addCustomElementsEs5Adapter(contents);
+    if (contents === updatedContents) {
+      callback(null, file);
+    } else {
+      const updatedFile = file.clone();
+      updatedFile.contents = new Buffer(updatedContents, 'utf-8');
+      callback(null, updatedFile);
+    }
+  }
+}
+
+/**
+ * Please avoid using this function because the API is likely to change. Prefer
+ * the interface provided by `PolymerProject.addCustomElementsEs5Adapter`.
+ *
+ * When compiling ES6 classes down to ES5 we need to include a special form of
+ * the webcomponents loader to be compatible with native custom elements. This
+ * includes moving the loader script element and all relevent siblings
+ * following it into the body so that the Custom Elements ES5 adapter can be
+ * properly injected.
+ *
+ * NOTE(fks) 03-28-2017: Comments are not currently moved to the body, which
+ * means relevent comments may be left behind in the head. This is fine for now,
+ * but may break if we ever decide to support important metadata in comments
+ * (ex: support for defining lazy-imports via HTML comments).
+ *
+ * TODO(fks) 03-28-2017: Add tests.
+ */
+export function addCustomElementsEs5Adapter(html: string): string {
+  // Only modify this file if we find a web components polyfill. This is a
+  // heuristic to identify the entry point HTML file. Ultimately we should
+  // explicitly transform only the entry point by having the project config.
+  if (!webcomponentsLoaderRegex.test(html)) {
+    return html;
+  }
+  const parsed = parse5.parse(html);
+  const script = dom5.nodeWalk(parsed, webcomponentsLoaderMatcher);
+  if (!script) {
+    return html;
+  }
+
+  // Collect important dom references & create fragments for injection.
+  const headElement = dom5.query(parsed, headMatcher)!;
+  const bodyElement = dom5.query(parsed, bodyMatcher)!;
+  const loaderScriptUrl = dom5.getAttribute(script, 'src')!;
+  const adapterScriptUrl =
+      url.resolve(loaderScriptUrl, 'custom-elements-es5-adapter.js');
+  const es5AdapterScript = parse5.parseFragment(`
     <!-- This block adds the "custom-elements-es5-adapter.js" shim to your application.
          It includes special logic that removes the shim before it can be parsed or run
          on browsers without native support for ES2015+ & custom elements. -->
@@ -104,18 +122,15 @@ export class InjectES5Adapter extends stream.Transform {
       <script type="text/javascript" src="${adapterScriptUrl}"></script>
     </div>
   `);
-    if (!bodyElement.childNodes) {
-      bodyElement.childNodes = [];
-    }
+  if (!bodyElement.childNodes) {
+    bodyElement.childNodes = [];
+  }
 
-    // If script is already in the body, just insert the shim right before it.
-    if (dom5.nodeWalkAncestors(script, bodyMatcher)) {
-      dom5.insertBefore(bodyElement, script, es5AdapterScript);
-      correctedFile.contents = new Buffer(parse5.serialize(parsed), 'utf-8');
-      callback(null, correctedFile);
-      return;
-    }
+  // If script is already in the body, just insert the shim right before it.
+  if (dom5.nodeWalkAncestors(script, bodyMatcher)) {
+    dom5.insertBefore(bodyElement, script, es5AdapterScript);
 
+  } else {
     // Otherwise we need to move the webcomponents-loader/webcomponents-lite
     // loader down to the body so that the es5 adaperter script shim will work.
     // Any following scripts, styles, and imports need to be moved down to the
@@ -132,8 +147,8 @@ export class InjectES5Adapter extends stream.Transform {
 
     // Insert a "loader moved" comment fragment into the head.
     dom5.insertBefore(headElement, script, loaderMovedComment);
-    // Move elements to the top of the body in reverse order, so that the
-    // first moved element is prepended last, preserving the original order.
+    // Move elements to the top of the body in reverse order, so that the first
+    // moved element is prepended last, preserving the original order.
     afterScriptSiblings.reverse();
     for (const releventScript of afterScriptSiblings) {
       dom5.insertBefore(
@@ -142,8 +157,7 @@ export class InjectES5Adapter extends stream.Transform {
     // Finally, inject the es5-adapter shim at the top of the body.
     dom5.insertBefore(
         bodyElement, bodyElement.childNodes[0] || null, es5AdapterScript);
-
-    correctedFile.contents = new Buffer(parse5.serialize(parsed), 'utf-8');
-    callback(null, correctedFile);
   }
+
+  return parse5.serialize(parsed);
 }
