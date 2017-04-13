@@ -4,6 +4,7 @@ export {BuildAnalyzer, DepsIndex} from './analyzer';
 export {BuildBundler} from './bundle';
 export {forkStream} from './fork-stream';
 export {HtmlSplitter} from './html-splitter';
+export {InjectES5Adapter} from './inject-es5-adapter';
 export {PolymerProject} from './polymer-project';
 export {addServiceWorker, generateServiceWorker} from './service-worker';
 export {AddServiceWorkerOptions} from './service-worker';
