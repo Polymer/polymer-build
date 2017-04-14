@@ -30,7 +30,7 @@
     "multipipe": "^1.0.2",
     "parse5": "^2.2.2",
     "plylog": "^0.5.0",
-    "polymer-analyzer": "2.0.0-alpha.34",
+    "polymer-analyzer": "2.0.0-alpha.37",
     "polymer-bundler": "2.0.0-pre.11",
     "polymer-project-config": "^2.0.0",
     "sw-precache": "^4.2.0",
