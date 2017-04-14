@@ -34,7 +34,7 @@ const styleMatcher = p.AND(
 /**
  * Wraps `addCustomElementsEs5Adapter()` in a `stream.Transform`.
  */
-export class CustomElementsEs5AdapterTransformer extends stream.Transform {
+export class CustomElementsEs5AdapterInjector extends stream.Transform {
   constructor() {
     super({objectMode: true});
   }

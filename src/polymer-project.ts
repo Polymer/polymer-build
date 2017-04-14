@@ -18,7 +18,7 @@ import {src as vinylSrc} from 'vinyl-fs';
 
 import {BuildAnalyzer} from './analyzer';
 import {BuildBundler} from './bundle';
-import {CustomElementsEs5AdapterTransformer} from './custom-elements-es5-adapter';
+import {CustomElementsEs5AdapterInjector} from './custom-elements-es5-adapter';
 import {AddPushManifest} from './push-manifest';
 
 const logger = logging.getLogger('polymer-project');
@@ -101,6 +101,6 @@ export class PolymerProject {
    * browsers that support the native Custom Elements API.
    */
   addCustomElementsEs5Adapter(): NodeJS.ReadWriteStream {
-    return new CustomElementsEs5AdapterTransformer();
+    return new CustomElementsEs5AdapterInjector();
   }
 }
