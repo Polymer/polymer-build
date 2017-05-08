@@ -86,13 +86,9 @@ export function addCustomElementsEs5Adapter(html: string): string {
   const adapterScriptUrl =
       url.resolve(loaderScriptUrl, 'custom-elements-es5-adapter.js');
   const es5AdapterFragment = parse5.parseFragment(`
-    <!-- ES5 Adapter Smart-Injection: This code is injected so that your
-    ES5-compiled custom elements will still work on browsers that support native
-    custom elements. The adapter will only be run if \`window.customElements\`
-    is not defined. -->
     <script>if (!window.customElements) { document.write('<!--'); }</script>
     <script type="text/javascript" src="${adapterScriptUrl}"></script>
-    <script>if (!window.customElements) { document.write('-->'); }</script>
+    <!-- do not remove -->
 `);
 
   dom5.insertBefore(script.parentNode, script, es5AdapterFragment);
