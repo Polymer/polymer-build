@@ -5,10 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
-
-* Simplify addCustomElementsEs5Adapter() adapter injection method.
+<!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
+
+## [1.2.4] - 2017-05-10
+
+* Simplify `addCustomElementsEs5Adapter()` adapter injection. The new injected snippet no longer needs to move around your scripts and imports to function correctly. However it includes a special comment that cannot be removed. Make sure that this stream comes after any HTML minifiers/transformers in your build pipeline.
 
 ## [1.2.3] - 2017-05-10
 
