@@ -88,7 +88,7 @@ export function addCustomElementsEs5Adapter(html: string): string {
   const es5AdapterFragment = parse5.parseFragment(`
     <script>if (!window.customElements) { document.write('<!--'); }</script>
     <script type="text/javascript" src="${adapterScriptUrl}"></script>
-    <!-- do not remove -->
+    <!--! do not remove -->
 `);
 
   dom5.insertBefore(script.parentNode, script, es5AdapterFragment);
