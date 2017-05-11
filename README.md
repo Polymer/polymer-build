@@ -200,7 +200,7 @@ mergeStream(project.sources(), project.dependencies())
 
 ### Custom Elements ES5 Adapter
 
-If your build pipeline outputs ES5 custom elements (either from source or by compilation with a tool like Babel), you must include the [Custom Elements ES5 Adapter](https://github.com/webcomponents/custom-elements/blob/master/src/native-shim.js). The ES5 adapter allows compiled elements work on browsers that expect ES2015 native custom elements. See the [adapter documentation](https://github.com/webcomponents/custom-elements/blob/master/src/native-shim.js) for details of why this is necessary.
+If your build pipeline outputs ES5 custom elements (either from source or by compilation with a tool like Babel), you must include the [Custom Elements ES5 Adapter](https://github.com/webcomponents/custom-elements/blob/master/src/native-shim.js). The ES5 adapter allows compiled elements to work on browsers that expect ES2015 native custom elements. See the [adapter documentation](https://github.com/webcomponents/custom-elements/blob/master/src/native-shim.js) for details of why this is necessary.
 
 #### project.addCustomElementsEs5Adapter()
 
