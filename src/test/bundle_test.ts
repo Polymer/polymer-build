@@ -291,12 +291,6 @@ suite('BuildBundler', () => {
         {
           root: path.resolve('test-fixtures/bundle-project'),
           entrypoint: 'index.html',
-          sources: [
-            'index.html',
-            'simple-import.html',
-            'simple-import-2.html',
-            'simple-style.css',
-          ],
         },
         {},
         addHeaders);
@@ -324,12 +318,6 @@ suite('BuildBundler', () => {
         {
           root: path.resolve('test-fixtures/bundle-project'),
           entrypoint: 'index.html',
-          sources: [
-            'index.html',
-            'simple-import.html',
-            'simple-import-2.html',
-            'simple-style.css',
-          ],
         },
         {},
         platformSepPaths);
@@ -359,12 +347,6 @@ suite('BuildBundler', () => {
         {
           root: path.resolve('test-fixtures/bundle-project'),
           entrypoint: 'index.html',
-          sources: [
-            'index.html',
-            'simple-import.html',
-            'simple-import-2.html',
-            'simple-style.css',
-          ],
         },
         {},
         posixSepPaths);
@@ -383,16 +365,45 @@ suite('BuildBundler', () => {
     assert.include(bundledHtml, '.simply-red', 'simple-style.css');
   });
 
-  test('bundler does not output imports which have been bundled', async() => {
-    await setupTest({
-      entrypoint: 'entrypoint-only.html',
-      sources: ['framework.html', 'entrypoint-only.html'],
-    });
-    // We should have an entrypoint-only.html file (bundled).
-    assert.isOk(getFile('entrypoint-only.html'));
+  test(
+      'bundler does not output html imports which have been bundled',
+      async() => {
+        await setupTest({
+          entrypoint: 'entrypoint-only.html',
+          sources: ['framework.html', 'entrypoint-only.html'],
+        });
+        // We should have an entrypoint-only.html file (bundled).
+        assert.isOk(getFile('entrypoint-only.html'));
 
-    // We should not have the inlined file in the output.
-    assert.isNotOk(getFile('framework.html'));
+        // We should not have the inlined file in the output.
+        assert.isNotOk(getFile('framework.html'));
+      });
+
+  test('bundler does not output inlined scripts or styles', async() => {
+    await setupTest({
+      root: path.resolve('test-fixtures/bundle-project'),
+      entrypoint: 'index.html',
+    });
+    assert.deepEqual(
+        [...files.keys()].sort(),
+        [path.resolve('test-fixtures/bundle-project/index.html')]);
+  });
+
+  test('bundler does output scripts and styles not inlined', async() => {
+    await setupTest(
+        {
+          root: path.resolve('test-fixtures/bundle-project'),
+          entrypoint: 'index.html',
+        },
+        {
+          inlineCss: false,
+          inlineScripts: false,
+        });
+    assert.deepEqual([...files.keys()].sort(), [
+      'test-fixtures/bundle-project/index.html',
+      'test-fixtures/bundle-project/simple-script.js',
+      'test-fixtures/bundle-project/simple-style.css'
+    ].map((p) => path.resolve(p)));
   });
 
   suite('options', () => {
