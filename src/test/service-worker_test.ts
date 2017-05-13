@@ -185,6 +185,34 @@ suite('service-worker', () => {
           });
     });
 
+    test('basePath should prefix resources', () => {
+      return serviceWorker
+          .generateServiceWorker({
+            project: defaultProject,
+            buildRoot: testBuildRoot,
+            basePath: '/my/base/path'
+          })
+          .then((swFile: Buffer) => {
+            const fileContents = swFile.toString();
+            assert.include(fileContents, '"/my/base/path/index.html"');
+          });
+    });
+
+    test('basePath prefixes should not have double delimiters', () => {
+      return serviceWorker
+          .generateServiceWorker({
+            project: defaultProject,
+            buildRoot: testBuildRoot,
+            basePath: '/my/base/path/'
+          })
+          .then((swFile: Buffer) => {
+            const fileContents = swFile.toString();
+            assert.include(fileContents, '"/my/base/path/index.html"');
+            assert.notInclude(fileContents, '"/my/base/path//index.html"');
+          });
+    });
+
+
   });
 
   suite('addServiceWorker()', () => {

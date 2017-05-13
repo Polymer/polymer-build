@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
 
+* A basePath can now be passed to the service worker generator, where it will be used as the sw-precache replacePrefix.
+
 ## [1.2.4] - 2017-05-11
 
 * Simplify addCustomElementsEs5Adapter() adapter injection method.
