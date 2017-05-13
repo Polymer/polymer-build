@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
 
+* A prefix can now be passed to `addPushManifest()`, which will be prepended to all push manifest resource paths.
+
 ## [1.2.4] - 2017-05-11
 
 * Simplify addCustomElementsEs5Adapter() adapter injection method.
