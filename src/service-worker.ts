@@ -125,7 +125,7 @@ export async function generateServiceWorker(options: AddServiceWorkerOptions):
       replacePrefix = replacePrefix.slice(0, -1);
     }
     if (swPrecacheConfig.replacePrefix) {
-      console.warn(
+      console.info(
           `Replacing service worker configuration's ` +
           `replacePrefix option (${swPrecacheConfig.replacePrefix}) ` +
           `with the build configuration's basePath (${replacePrefix}).`);

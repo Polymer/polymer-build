@@ -14,6 +14,7 @@
 
 /// <reference path="../../node_modules/@types/mocha/index.d.ts" />
 
+// TODO Migrate to async tests.
 
 import {assert} from 'chai';
 import * as fs from 'fs';
