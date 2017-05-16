@@ -185,6 +185,9 @@ export abstract class AsyncTransformStream<In extends{}, Out extends{}> extends
               new Error(
                   `${this.constructor.name}` +
                   ` did not consume all input while transforming.`));
+          // Since _transformIter has exited, but not all input was consumed,
+          // this._flush won't be called. We need to signal manually that
+          // no more output will be written by this stream.
           this.push(null);
         }
       }, (err) => this.emit('error', err));
