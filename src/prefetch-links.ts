@@ -81,7 +81,9 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
           document.parsedDocument.contents,
           document.parsedDocument.baseUrl,
           dependencyUrls,
-          'prefetch');
+          'prefetch',
+          document.url ===
+              urlFromPath(this._config.root, this._config.entrypoint));
       const filePath = pathFromUrl(this._config.root, documentUrl);
       yield new File({contents: new Buffer(html), path: filePath})
     }
@@ -91,28 +93,27 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
 /**
  * Returns the given HTML updated with import or prefetch links for the given
  * dependencies. The given url and deps are expected to be project-relative
- * URLs (e.g. "index.html" or "src/view.html").
- *
- * When rel is prefetch, we assume we have the top-level entry point (which
- * can
- * be served from any URL), and output absolute URLs. Otherwise we output
- * relative URLs.
+ * URLs (e.g. "index.html" or "src/view.html") unless absolute parameter is
+ * `true` and there is no base tag in the document.
  */
 export function createLinks(
-    html: string, url: string, deps: Set<string>, rel: 'import'|'prefetch'):
-    string {
+    html: string,
+    baseUrl: string,
+    deps: Set<string>,
+    rel: 'import'|'prefetch',
+    absolute: boolean = false): string {
   const ast = parse5.parse(html);
   const baseTag = dom5.query(ast, dom5.predicates.hasTagName('base'));
-  const baseHref = baseTag ? dom5.getAttribute(baseTag, 'href') : '';
+  const baseTagHref = baseTag ? dom5.getAttribute(baseTag, 'href') : '';
 
   // parse5 always produces a <head> element.
   const head = dom5.query(ast, dom5.predicates.hasTagName('head'))!;
   for (const dep of deps) {
     let href;
-    if (rel === 'prefetch' && !baseHref) {
+    if (absolute && !baseTagHref) {
       href = absUrl(dep);
     } else {
-      href = relativeUrl(absUrl(url), absUrl(dep));
+      href = relativeUrl(absUrl(baseUrl), absUrl(dep));
     }
     const link = dom5.constructors.element('link');
     dom5.setAttribute(link, 'rel', rel);

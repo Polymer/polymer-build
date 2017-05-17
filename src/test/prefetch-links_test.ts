@@ -139,7 +139,7 @@ suite('prefetch', () => {
            '<link rel="import" href="../bower_components/polymer/polymer.html">' +
            '<link rel="import" href="my-icons.html">' +
            '</head><body>foo</body></html>');
-      const actual = createLinks(html, url, deps, 'import')
+      const actual = createLinks(html, url, deps, 'import', false)
       assert.equal(actual, expected);
     });
 
@@ -150,7 +150,7 @@ suite('prefetch', () => {
            '<link rel="prefetch" href="/bower_components/polymer/polymer.html">' +
            '<link rel="prefetch" href="/src/my-icons.html">' +
            '</head><body>foo</body></html>');
-      const actual = createLinks(html, url, deps, 'prefetch')
+      const actual = createLinks(html, url, deps, 'prefetch', true)
       assert.equal(actual, expected);
     });
 
@@ -161,7 +161,7 @@ suite('prefetch', () => {
            '<link rel="prefetch" href="bower_components/polymer/polymer.html">' +
            '<link rel="prefetch" href="src/my-icons.html">' +
            '</head><body>foo</body></html>');
-      const actual = createLinks(htmlWithBase, url, deps, 'prefetch')
+      const actual = createLinks(htmlWithBase, url, deps, 'prefetch', true)
       assert.equal(actual, expected);
     });
   });
