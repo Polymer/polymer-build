@@ -101,11 +101,14 @@ export function createLinks(
     html: string, url: string, deps: Set<string>, rel: 'import'|'prefetch'):
     string {
   const ast = parse5.parse(html);
+  const baseTag = dom5.query(ast, dom5.predicates.hasTagName('base'));
+  const baseHref = baseTag ? dom5.getAttribute(baseTag, 'href') : '';
+
   // parse5 always produces a <head> element.
   const head = dom5.query(ast, dom5.predicates.hasTagName('head'))!;
   for (const dep of deps) {
     let href;
-    if (rel === 'prefetch') {
+    if (rel === 'prefetch' && !baseHref) {
       href = '/' + dep;
     } else {
       href = path.posix.relative(path.posix.dirname(url), dep);

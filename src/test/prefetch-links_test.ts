@@ -106,10 +106,27 @@ suite('prefetch', () => {
       assert.notInclude(
           html, '<link rel="prefetch" href="/lazy-dependency.html">');
     });
+
+    test('prefetch links are relative when base tag present', async() => {
+
+      const project = new PolymerProject({
+        root: 'test-fixtures/differential-serving/',
+        entrypoint: 'index.html',
+      });
+
+      const files = await pipedFiles(
+          project.config.root,
+          mergeStream(project.sources(), project.dependencies())
+              .pipe(project.addPrefetchLinks()));
+
+      const html = files.get('index.html').contents.toString();
+      assert.include(html, '<link rel="prefetch" href="shell.html">');
+    });
   });
 
   suite('createLinks', () => {
     const html = '<html><body>foo</body></html>';
+    const htmlWithBase = '<html><base href="/base/"><body>foo</body></html>';
     const deps = new Set([
       'bower_components/polymer/polymer.html',
       'src/my-icons.html',
@@ -134,6 +151,17 @@ suite('prefetch', () => {
            '<link rel="prefetch" href="/src/my-icons.html">' +
            '</head><body>foo</body></html>');
       const actual = createLinks(html, url, deps, 'prefetch')
+      assert.equal(actual, expected);
+    });
+
+    test('with rel prefetch and a base href', () => {
+      const url = 'index.html';
+      const expected =
+          ('<html><head><base href="/base/">' +
+           '<link rel="prefetch" href="bower_components/polymer/polymer.html">' +
+           '<link rel="prefetch" href="src/my-icons.html">' +
+           '</head><body>foo</body></html>');
+      const actual = createLinks(htmlWithBase, url, deps, 'prefetch')
       assert.equal(actual, expected);
     });
   });
