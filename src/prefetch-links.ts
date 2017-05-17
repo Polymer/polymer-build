@@ -16,7 +16,9 @@ import * as dom5 from 'dom5';
 import * as parse5 from 'parse5';
 import * as path from 'path';
 import {Analyzer, Document} from 'polymer-analyzer';
+import {relativeUrl} from 'polymer-bundler/lib/url-utils';
 import {ProjectConfig} from 'polymer-project-config';
+
 import File = require('vinyl');
 
 import {pathFromUrl, urlFromPath} from './path-transformers';
@@ -75,10 +77,9 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
 
       const dependencyUrls =
           new Set(dependencies.map((d) => d.url.replace(/^\/?/, '')));
-
       const html = createLinks(
           document.parsedDocument.contents,
-          documentUrl,
+          document.parsedDocument.baseUrl,
           dependencyUrls,
           'prefetch');
       const filePath = pathFromUrl(this._config.root, documentUrl);
@@ -109,9 +110,9 @@ export function createLinks(
   for (const dep of deps) {
     let href;
     if (rel === 'prefetch' && !baseHref) {
-      href = '/' + dep;
+      href = absUrl(dep);
     } else {
-      href = path.posix.relative(path.posix.dirname(url), dep);
+      href = relativeUrl(absUrl(url), absUrl(dep));
     }
     const link = dom5.constructors.element('link');
     dom5.setAttribute(link, 'rel', rel);
@@ -119,4 +120,8 @@ export function createLinks(
     dom5.append(head, link);
   }
   return parse5.serialize(ast);
+}
+
+function absUrl(url: string): string {
+  return url.startsWith('/') ? url : '/' + url;
 }
