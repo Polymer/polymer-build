@@ -31,8 +31,7 @@ export async function emittedFiles(
       (resolve, reject) =>
           stream
               .on('data',
-                  (f: File) => files.set(
-                      f.path.substring(root.length + 1).replace(/\\/, '/'), f))
+                  (f: File) => files.set(f.path.substring(root.length + 1), f))
               .on('data', () => {/* starts the stream */})
               .on('end', () => resolve(files))
               .on('error', (e: Error) => reject(e)));
