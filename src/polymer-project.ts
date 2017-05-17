@@ -20,6 +20,7 @@ import {BuildAnalyzer} from './analyzer';
 import {BaseTagUpdater} from './base-tag-updater';
 import {BuildBundler, Options as BuildBundlerOptions} from './bundle';
 import {CustomElementsEs5AdapterInjector} from './custom-elements-es5-adapter';
+import {AddPrefetchLinks} from './prefetch-links';
 import {AddPushManifest} from './push-manifest';
 
 const logger = logging.getLogger('polymer-project');
@@ -91,6 +92,10 @@ export class PolymerProject {
     }
 
     return dependenciesStream;
+  }
+
+  addPrefetchLinks(): AddPrefetchLinks {
+    return new AddPrefetchLinks(this.config);
   }
 
   addPushManifest(filePath?: string, prefix?: string): NodeJS.ReadWriteStream {
