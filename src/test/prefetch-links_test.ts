@@ -12,28 +12,14 @@
 'use strict';
 
 import {assert} from 'chai';
-import {EventEmitter} from 'stream';
-import File = require('vinyl');
 
 const mergeStream = require('merge-stream');
 
 import {PolymerProject} from '../polymer-project';
 import {createLinks} from '../prefetch-links';
+import {emittedFiles} from './util';
 
-async function pipedFiles(root: string, pipe: EventEmitter):
-    Promise<Map<string, File>> {
-      const files = new Map<string, File>();
-      const unroot = ((p: string) => p.substring(root.length + 1));
-      return new Promise<Map<string, File>>((resolve, reject) => {
-        pipe.on('data', (f: File) => files.set(unroot(f.path), f))
-        pipe.on('end', () => {
-          resolve(files);
-        })
-        pipe.on('error', (error: any) => reject(error));
-      });
-    }
-
-suite('prefetch', () => {
+suite('prefetch-links', () => {
 
   suite('AddPrefetchLinks', () => {
 
@@ -44,10 +30,10 @@ suite('prefetch', () => {
         entrypoint: 'index.html',
       });
 
-      const files = await pipedFiles(
-          project.config.root,
+      const files = await emittedFiles(
           mergeStream(project.sources(), project.dependencies())
-              .pipe(project.addPrefetchLinks()));
+              .pipe(project.addPrefetchLinks()),
+          project.config.root);
       const html = files.get('index.html').contents.toString();
       assert.include(html, '<link rel="prefetch" href="/simple-script.js">');
       assert.include(html, '<link rel="prefetch" href="/simple-style.css">');
@@ -63,11 +49,11 @@ suite('prefetch', () => {
         entrypoint: 'index.html',
       });
 
-      const files = await pipedFiles(
-          project.config.root,
+      const files = await emittedFiles(
           mergeStream(project.sources(), project.dependencies())
               .pipe(project.bundler({inlineCss: false}))
-              .pipe(project.addPrefetchLinks()));
+              .pipe(project.addPrefetchLinks()),
+          project.config.root);
 
       const expectedFiles = ['index.html', 'simple-style.css'];
       assert.deepEqual(expectedFiles, [...files.keys()].sort());
@@ -87,10 +73,10 @@ suite('prefetch', () => {
         entrypoint: 'index.html',
       });
 
-      const files = await pipedFiles(
-          project.config.root,
+      const files = await emittedFiles(
           mergeStream(project.sources(), project.dependencies())
-              .pipe(project.addPrefetchLinks()));
+              .pipe(project.addPrefetchLinks()),
+          project.config.root);
 
       const html = files.get('index.html').contents.toString();
       assert.include(html, '<link rel="prefetch" href="/shell.html">');
@@ -114,10 +100,10 @@ suite('prefetch', () => {
         entrypoint: 'index.html',
       });
 
-      const files = await pipedFiles(
-          project.config.root,
+      const files = await emittedFiles(
           mergeStream(project.sources(), project.dependencies())
-              .pipe(project.addPrefetchLinks()));
+              .pipe(project.addPrefetchLinks()),
+          project.config.root);
 
       const html = files.get('index.html').contents.toString();
       assert.include(html, '<link rel="prefetch" href="shell.html">');
