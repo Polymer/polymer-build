@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!--## Unreleased-->
 <!-- Add new, unreleased changes here. -->
 
-## [1.3.2] - 2017-05-18
+## [1.4.0] - 2017-05-18
 
 * Added `PolymerProject.addPrefetchLinks()` transform.
 * Added `PolymerProject.addBabelHelpersInEntrypoint()` transform.
