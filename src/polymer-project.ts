@@ -100,8 +100,8 @@ export class PolymerProject {
    * For entrypoint documents without `<base>` tag, absolute urls are used in
    * prefetch link hrefs.  In all other cases, link hrefs will be relative urls.
    */
-  addPrefetchLinks(): AddPrefetchLinks {
-    return new AddPrefetchLinks(this.config);
+  addPrefetchLinks(): NodeJS.ReadWriteStream {
+    return new AddPrefetchLinks(this.config) as any;
   }
 
   /**
