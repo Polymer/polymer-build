@@ -97,6 +97,8 @@ export class PolymerProject {
   /**
    * Returns a stream transformer that injects 'prefetch' link tags into HTML
    * documents based on the transitive dependencies of the document.
+   * For entrypoint documents without `<base>` tag, absolute urls are used in
+   * prefetch link hrefs.  In all other cases, link hrefs will be relative urls.
    */
   addPrefetchLinks(): AddPrefetchLinks {
     return new AddPrefetchLinks(this.config);
