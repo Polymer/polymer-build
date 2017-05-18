@@ -118,36 +118,25 @@ suite('prefetch-links', () => {
       'src/my-icons.html',
     ]);
 
-    test('with rel import', () => {
-      const url = 'src/my-app.html';
-      const expected =
-          ('<html><head>' +
-           '<link rel="import" href="../bower_components/polymer/polymer.html">' +
-           '<link rel="import" href="my-icons.html">' +
-           '</head><body>foo</body></html>');
-      const actual = createLinks(html, url, deps, 'import', false)
-      assert.equal(actual, expected);
-    });
-
-    test('with rel prefetch', () => {
+    test('with no base tag and absolute true', () => {
       const url = 'index.html';
       const expected =
           ('<html><head>' +
            '<link rel="prefetch" href="/bower_components/polymer/polymer.html">' +
            '<link rel="prefetch" href="/src/my-icons.html">' +
            '</head><body>foo</body></html>');
-      const actual = createLinks(html, url, deps, 'prefetch', true)
+      const actual = createLinks(html, url, deps, true)
       assert.equal(actual, expected);
     });
 
-    test('with rel prefetch and a base href', () => {
+    test('with a base tag and absolute true', () => {
       const url = 'index.html';
       const expected =
           ('<html><head><base href="/base/">' +
            '<link rel="prefetch" href="bower_components/polymer/polymer.html">' +
            '<link rel="prefetch" href="src/my-icons.html">' +
            '</head><body>foo</body></html>');
-      const actual = createLinks(htmlWithBase, url, deps, 'prefetch', true)
+      const actual = createLinks(htmlWithBase, url, deps, true)
       assert.equal(actual, expected);
     });
   });

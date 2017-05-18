@@ -76,12 +76,11 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
                            })].filter((d) => !d.lazy);
 
       const dependencyUrls =
-          new Set(dependencies.map((d) => d.url.replace(/^\/?/, '')));
+          new Set(dependencies.map((d) => d.url.replace(/^\//, '')));
       const html = createLinks(
           document.parsedDocument.contents,
           document.parsedDocument.baseUrl,
           dependencyUrls,
-          'prefetch',
           document.url ===
               urlFromPath(this._config.root, this._config.entrypoint));
       const filePath = pathFromUrl(this._config.root, documentUrl);
@@ -100,7 +99,6 @@ export function createLinks(
     html: string,
     baseUrl: string,
     deps: Set<string>,
-    rel: 'import'|'prefetch',
     absolute: boolean = false): string {
   const ast = parse5.parse(html);
   const baseTag = dom5.query(ast, dom5.predicates.hasTagName('base'));
@@ -116,7 +114,7 @@ export function createLinks(
       href = relativeUrl(absUrl(baseUrl), absUrl(dep));
     }
     const link = dom5.constructors.element('link');
-    dom5.setAttribute(link, 'rel', rel);
+    dom5.setAttribute(link, 'rel', 'prefetch');
     dom5.setAttribute(link, 'href', href);
     dom5.append(head, link);
   }
