@@ -23,6 +23,11 @@ export function getFlowingState(stream: NodeJS.ReadableStream): boolean {
   return privateReadableState.flowing;
 }
 
+/**
+ * This method makes it possible to `await` a map of paths to `File` objects
+ * emitted by a stream. It returns a Promise that resolves with the map
+ * where the paths in the map exclude the optional `root` prefix.
+ */
 export async function emittedFiles(
     stream: NodeJS.ReadableStream,
     root: string = ''): Promise<Map<string, File>> {
