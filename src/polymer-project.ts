@@ -94,10 +94,18 @@ export class PolymerProject {
     return dependenciesStream;
   }
 
+  /**
+   * Returns a stream transformer that injects 'prefetch' link tags into HTML
+   * documents based on the transitive dependencies of the document.
+   */
   addPrefetchLinks(): AddPrefetchLinks {
     return new AddPrefetchLinks(this.config);
   }
 
+  /**
+   * Returns a stream transformer that adds a push manifest file to the set
+   * of all input files that pass through.
+   */
   addPushManifest(filePath?: string, prefix?: string): NodeJS.ReadWriteStream {
     // TODO(rictic): remove casts after this lands:
     // https://github.com/DefinitelyTyped/DefinitelyTyped/pull/16499
