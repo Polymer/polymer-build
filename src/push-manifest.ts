@@ -51,7 +51,7 @@ import {AsyncTransformStream} from './streams';
 export type ResourceType = 'document' | 'script' | 'style' | 'image' | 'font';
 export interface PushManifestEntry {
   type?: ResourceType;
-  weight: 1;
+  weight?: 1;
 }
 export interface PushManifestEntryCollection {
   [dependencyAbsoluteUrl: string]: PushManifestEntry;
@@ -140,9 +140,9 @@ async function generatePushManifestEntryForUrl(
   }
 
   for (const analyzedImport of analyzedImports) {
-    // TODO This import URL does not respect the document's base tag. Probably
-    // an issue more generally with all URLs analyzed out of documents, but
-    // base tags are somewhat rare.
+    // TODO This import URL does not respect the document's base tag.
+    // Probably an issue more generally with all URLs analyzed out of
+    // documents, but base tags are somewhat rare.
     const analyzedImportUrl = analyzedImport.url;
     const analyzedImportEntry = pushManifestEntries[analyzedImportUrl];
     if (!shouldIgnoreFile(analyzedImportUrl) && !analyzedImportEntry) {
@@ -193,8 +193,8 @@ export class AddPushManifest extends AsyncTransformStream<File, File> {
     });
   }
 
-  async generatePushManifest() {
-    const pushManifest: any = {};
+  async generatePushManifest(): Promise<PushManifest> {
+    const pushManifest: PushManifest = {};
     // If an app-shell exists, use that as our main push URL because it has a
     // reliable URL. Otherwise, support the single entrypoint URL.
     const mainPushEntrypoint = this.config.shell || this.config.entrypoint;
@@ -223,9 +223,9 @@ export class AddPushManifest extends AsyncTransformStream<File, File> {
     const normalize = (p: string) =>
         path.posix.join(this.basePath, p).replace(/^\/+/, '');
 
-    const normalized: any = {};
+    const normalized: PushManifest = {};
     for (const source of Object.keys(pushManifest)) {
-      const targets: any = {};
+      const targets: PushManifestEntryCollection = {};
       for (const target of Object.keys(pushManifest[source])) {
         targets[normalize(target)] = pushManifest[source][target];
       }
