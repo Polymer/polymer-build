@@ -42,7 +42,7 @@ suite('Babel Helpers Injecter', () => {
   });
 
   test('injects babel helpers inline into the entrypoint', (done) => {
-    const webcomponentsLoaderFilname = 'webcomponents-loader.js';
+    const webcomponentsLoaderFilename = 'webcomponents-loader.js';
     const files = new Map();
     defaultProject.sources()
         .pipe(defaultProject.addBabelHelpersInEntrypoint())
@@ -59,7 +59,7 @@ suite('Babel Helpers Injecter', () => {
           assert.include(index, 'babelHelpers=');
           assert(
               index.indexOf('babelHelpers=') <
-                  index.indexOf(webcomponentsLoaderFilname),
+                  index.indexOf(webcomponentsLoaderFilename),
               'babel helpers should come before all other executable code.');
           assert.notInclude(shell, 'babelHelpers=');
           done();

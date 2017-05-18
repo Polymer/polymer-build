@@ -42,7 +42,7 @@ suite('Custom Elements ES5 Adapter', () => {
   });
 
   test('injects the custom elements es5 adapter in index', (done) => {
-    const webcomponentsLoaderFilname = 'webcomponents-loader.js';
+    const webcomponentsLoaderFilename = 'webcomponents-loader.js';
     const injectedAdapterFilename = 'custom-elements-es5-adapter.js';
     const files = new Map();
     defaultProject.sources()
@@ -59,11 +59,11 @@ suite('Custom Elements ES5 Adapter', () => {
           const index = files.get('index.html').contents.toString();
           const shell = files.get('shell.html').contents.toString();
           assert.include(index, injectedAdapterFilename);
-          assert.include(index, webcomponentsLoaderFilname);
+          assert.include(index, webcomponentsLoaderFilename);
           assert.include(index, 'babelHelpers=');
           assert(
               index.indexOf(injectedAdapterFilename) <
-                  index.indexOf(webcomponentsLoaderFilname),
+                  index.indexOf(webcomponentsLoaderFilename),
               'the es5 adapter should come before webcomponents-loader');
           assert(
               index.indexOf('babelHelpers=') <
