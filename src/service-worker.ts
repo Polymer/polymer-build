@@ -116,9 +116,10 @@ export async function generateServiceWorker(options: AddServiceWorkerOptions):
   // NOTE:(usergenic) sw-precache generate() apparently replaces the
   // prefix on an already posixified version of the path on win32.
   //
-  // We include a trailing slash so that we end up with relative URLs instead
-  // of absolute. This is needed for builds mounted at non-root paths. Note
-  // that the service worker fetches relative to its own URL.
+  // We include a trailing slash in `stripPrefix` so that we remove leading
+  // slashes on the pre-cache asset URLs, hence producing relative URLs
+  // instead of absolute. We want relative URLs for builds mounted at non-root
+  // paths. Note that service worker fetches are relative to its own URL.
   swPrecacheConfig.stripPrefix = addTrailingSlash(posixifyPath(buildRoot));
 
   if (options.basePath) {
