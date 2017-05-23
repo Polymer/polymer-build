@@ -115,14 +115,17 @@ export async function generateServiceWorker(options: AddServiceWorkerOptions):
   // swPrecache will determine the right urls by stripping buildRoot.
   // NOTE:(usergenic) sw-precache generate() apparently replaces the
   // prefix on an already posixified version of the path on win32.
-  swPrecacheConfig.stripPrefix = posixifyPath(buildRoot);
+  //
+  // We include a trailing slash so that we end up with relative URLs instead
+  // of absolute. This is needed for builds mounted at non-root paths. Note
+  // that the service worker fetches relative to its own URL.
+  swPrecacheConfig.stripPrefix = addTrailingSlash(posixifyPath(buildRoot));
 
   if (options.basePath) {
+    // TODO Drop this feature once CLI doesn't depend on it.
     let replacePrefix = options.basePath;
-    // Avoid a "/foo//bar" situation.
-    if (replacePrefix.endsWith('/') &&
-        !swPrecacheConfig.stripPrefix.endsWith('/')) {
-      replacePrefix = replacePrefix.slice(0, -1);
+    if (!replacePrefix.endsWith('/')) {
+      replacePrefix = replacePrefix + '/';
     }
     if (swPrecacheConfig.replacePrefix) {
       console.info(
@@ -173,4 +176,8 @@ export function addServiceWorker(options: AddServiceWorkerOptions):
       });
     });
   });
+}
+
+function addTrailingSlash(s: string): string {
+  return s.endsWith('/') ? s : s + '/';
 }
