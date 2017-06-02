@@ -75,7 +75,7 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
           imported: true,
           noLazyImports: true
         })
-      ].filter((d) => !d.lazy).map((d) => d.document.url.replace(/^\//, ''));
+      ].filter((d) => !d.lazy).map((d) => d.document.url);
 
       const directDependencyUrls = [
         ...document.getFeatures({
@@ -84,7 +84,7 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
           imported: false,
           noLazyImports: true
         })
-      ].filter((d) => !d.lazy).map((d) => d.document.url.replace(/^\//, ''));
+      ].filter((d) => !d.lazy).map((d) => d.document.url);
 
       const onlyTransitiveDependencyUrls = allDependencyUrls.filter(
           (d) => directDependencyUrls.indexOf(d) === -1);
