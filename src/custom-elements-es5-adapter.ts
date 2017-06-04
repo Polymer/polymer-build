@@ -75,7 +75,7 @@ export function addCustomElementsEs5Adapter(html: string): string {
       url.resolve(loaderScriptUrl, 'custom-elements-es5-adapter.js');
   const es5AdapterFragment = parse5.parseFragment(`
     <script>if (!window.customElements) { document.write('<!--'); }</script>
-    <script type="text/javascript" src="${adapterScriptUrl}"></script>
+    <script src="${adapterScriptUrl}"></script>
     <!--! do not remove -->
 `);
 
