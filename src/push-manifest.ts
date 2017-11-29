@@ -49,7 +49,7 @@ import {AsyncTransformStream} from './streams';
  * When support is added, we can add automatic weighting and support multiple
  * numbers.
  */
-export type ResourceType = 'document' | 'script' | 'style' | 'image' | 'font';
+export type ResourceType = 'document'|'script'|'style'|'image'|'font';
 export interface PushManifestEntry {
   type?: ResourceType;
   weight?: 1;
@@ -111,7 +111,11 @@ function getResourceTypeFromImport(importFeature: Import): ResourceType|
 /**
  * Create a PushManifestEntry from an analyzer Import.
  */
-function createPushEntryFromImport(importFeature: Import): PushManifestEntry {
+function createPushEntryFromImport(importFeature: Import): PushManifestEntry|
+    undefined {
+  if (importFeature.kinds.has('html-script-back-reference')) {
+    return undefined;
+  }
   return {
     type: getResourceTypeFromImport(importFeature),
     weight: 1,
@@ -148,8 +152,10 @@ async function generatePushManifestEntryForUrl(
     const analyzedImportUrl = analyzedImport.url;
     const analyzedImportEntry = pushManifestEntries[analyzedImportUrl];
     if (!analyzedImportEntry) {
-      pushManifestEntries[analyzedImportUrl] =
-          createPushEntryFromImport(analyzedImport);
+      const pushEntry = createPushEntryFromImport(analyzedImport);
+      if (pushEntry !== undefined) {
+        pushManifestEntries[analyzedImportUrl] = pushEntry;
+      }
     }
   }
 
