@@ -170,8 +170,8 @@ class AsyncQueue<V> implements AsyncIterable<V> {
  *
  * `In` and `Out` extend `{}` because they may not be `null`.
  */
-export abstract class AsyncTransformStream<In extends{}, Out extends{}> extends
-    Transform {
+export abstract class AsyncTransformStream<In extends {}, Out extends {}>
+    extends Transform {
   private readonly _inputs = new AsyncQueue<In>();
 
   /**
