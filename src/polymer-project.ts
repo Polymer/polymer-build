@@ -46,6 +46,10 @@ export class PolymerProject {
       this.config = new ProjectConfig(config);
     }
 
+    if (this.config.autoBasePath) {
+      this.config.builds.map((build: ProjectOptions) => build.basePath = true)
+    }
+
     logger.debug(`build config loaded:`, this.config);
 
     this.analyzer = new BuildAnalyzer(this.config);
