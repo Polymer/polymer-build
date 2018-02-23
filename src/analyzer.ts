@@ -130,10 +130,9 @@ export class BuildAnalyzer {
     this.loader = new StreamLoader(this);
     this.analyzer = new Analyzer({
       urlLoader: this.loader,
-      urlResolver:
-        (config.componentDir)
-          ? new PackageUrlResolver({componentDir: config.componentDir})
-          : undefined,
+      urlResolver: (config.componentDir) ?
+          new PackageUrlResolver({componentDir: config.componentDir}) :
+          undefined,
     });
 
     this.allFragmentsToAnalyze = new Set(this.config.allFragments);
