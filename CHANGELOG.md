@@ -5,8 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+<!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
+
+## [2.2.0] - 2018-02-23
 * Fixed issue where the build silently fails when several source dependencies are missing
 * If the ProjectConfig given to BuildAnalyzer has a `componentDir`, pass a PackageUrlResolver using that `componentDir` to the underlying Analyzer.
 
