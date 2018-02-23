@@ -135,7 +135,7 @@ suite('Analyzer', () => {
         'setting `npm: true` searches for dependencies in "node_modules/"',
         () => {
           const foundDependencies = new Set();
-          const root = `test-fixtures/analyzer-componentDir`;
+          const root = `test-fixtures/analyzer-componentDir-npm`;
           const sourceFiles =
               ['my-component.js'].map((p) => path.resolve(root, p));
           const config = new ProjectConfig({
