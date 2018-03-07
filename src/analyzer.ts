@@ -14,7 +14,7 @@
 
 import * as path from 'path';
 import * as logging from 'plylog';
-import {Analyzer, Document, PackageUrlResolver, Severity, UrlLoader, Warning, WarningFilter, WarningPrinter} from 'polymer-analyzer';
+import {Analyzer, PackageUrlResolver, ResolvedUrl, Severity, UrlLoader, Warning, WarningFilter, WarningPrinter} from 'polymer-analyzer';
 import {parseUrl} from 'polymer-analyzer/lib/core/utils';
 import {ProjectConfig} from 'polymer-project-config';
 import {PassThrough, Transform} from 'stream';
@@ -356,13 +356,13 @@ export class BuildAnalyzer {
    */
   async _getDependencies(url: string): Promise<DocumentDeps> {
     const analysis = await this.analyzer.analyze([url]);
-    const doc = analysis.getDocument(url);
+    const result = analysis.getDocument(url);
 
-    if (!(doc instanceof Document)) {
-      const message = doc && doc.message || 'unknown';
-      throw new Error(`Unable to get document ${url}: ${message}`);
+    if (result.successful === false) {
+      throw new Error(`Unable to get document ${url}: ${result.error.message}`);
     }
 
+    const doc = result.value;
     doc.getWarnings({imported: true})
         .filter((w) => !this._warningsFilter.shouldIgnore(w))
         .forEach((w) => this.warnings.add(w));
@@ -375,9 +375,10 @@ export class BuildAnalyzer {
         {kind: 'import', externalPackages: true, imported: true});
     for (const importFeature of importFeatures) {
       const importUrl = importFeature.url;
-      if (!this.analyzer.canResolveUrl(importUrl)) {
-        logger.debug(`ignoring external dependency: ${importUrl}`);
-      } else if (importFeature.type === 'html-script') {
+      // TODO(aomarks) Is this right? Previously we asked analyzer if this url
+      // was resolvable. But url is now resolvable by definition, because it is
+      // branded as such, so there is no need to check?
+      if (importFeature.type === 'html-script') {
         scripts.add(importUrl);
       } else if (importFeature.type === 'html-style') {
         styles.add(importUrl);
@@ -495,11 +496,14 @@ export class StreamLoader implements UrlLoader {
   }
 
   // We can't load external dependencies.
-  canLoad(url: string): boolean {
-    return this._buildAnalyzer.analyzer.canResolveUrl(url);
+  canLoad(_url: ResolvedUrl): boolean {
+    // TODO(aomarks) Is this right? Previously this function returned true if
+    // the Analyzer said it was resolvable. But url is now resolvable by
+    // definition, because it is branded as such.
+    return true;
   }
 
-  async load(url: string): Promise<string> {
+  async load(url: ResolvedUrl): Promise<string> {
     logger.debug(`loading: ${url}`);
     const urlObject = parseUrl(url);
 

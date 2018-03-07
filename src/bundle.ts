@@ -66,8 +66,8 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
 
     strategy = strategy ||
         this.config.shell &&
-            generateShellMergeStrategy(
-                urlFromPath(this.config.root, this.config.shell));
+            generateShellMergeStrategy(analyzer.urlResolver.resolve(
+                this.config.root, this.config.shell));
 
     this._bundler = new Bundler({
       analyzer: forkedAnalyzer,
