@@ -26,7 +26,6 @@ import {HtmlSplitter} from '../html-splitter';
 const testProjectRoot = path.resolve('test-fixtures/splitter-project');
 
 suite('HtmlSplitter', () => {
-
   let defaultProject: PolymerProject;
 
   const unroot = ((p: string) => p.substring(testProjectRoot.length + 1));
@@ -46,6 +45,8 @@ suite('HtmlSplitter', () => {
     const htmlSplitter = new HtmlSplitter();
     const splitFiles = new Map();
     defaultProject.sources()
+        .on('data', console.log)
+        .on('error', console.log)
         .pipe(htmlSplitter.split())
         .on('data', (f: File) => splitFiles.set(unroot(f.path), f))
         .pipe(htmlSplitter.rejoin())

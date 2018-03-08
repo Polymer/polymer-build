@@ -40,9 +40,7 @@ class NoopStream extends Writable {
 }
 
 suite('Analyzer', () => {
-
   suite('DepsIndex', () => {
-
     test('fragment to deps list has only uniques', () => {
       const config = new ProjectConfig({
         root: `test-fixtures/analyzer-data`,
@@ -59,14 +57,14 @@ suite('Analyzer', () => {
       analyzer.dependencies().pipe(new NoopStream());
 
       return waitForAll([analyzer.sources(), analyzer.dependencies()])
-          .then(() => {
-            return analyzer.analyzeDependencies;
-          })
+          .then(() => analyzer.analyzeDependencies)
           .then((depsIndex) => {
             const ftd = depsIndex.fragmentToDeps;
             for (const frag of ftd.keys()) {
-              assert.deepEqual(
-                  ftd.get(frag), ['shared-1.html', 'shared-2.html']);
+              assert.deepEqual(ftd.get(frag), [
+                analyzer.analyzer.resolveUrl('shared-1.html'),
+                analyzer.analyzer.resolveUrl('shared-2.html'),
+              ]);
             }
           });
     });
@@ -91,26 +89,24 @@ suite('Analyzer', () => {
             return analyzer.analyzeDependencies;
           })
           .then((depsIndex) => {
-            assert.isTrue(depsIndex.depsToFragments.has('shared-2.html'));
-            assert.isFalse(depsIndex.depsToFragments.has('/shell.html'));
-            assert.isFalse(depsIndex.depsToFragments.has('/shared-2.html'));
+            assert.isTrue(depsIndex.depsToFragments.has(
+                analyzer.analyzer.resolveUrl('shared-2.html')));
+            assert.isFalse(depsIndex.depsToFragments.has(
+                analyzer.analyzer.resolveUrl('shell.html')));
           });
     });
-
   });
 
   suite('ProjectConfig componentDir', () => {
-
     test(
-        'setting `componentDir` searches for dependencies in the given ' +
-            'directory',
+        'setting `componentDir` searches for dependencies in the given directory',
         () => {
           const foundDependencies = new Set();
-          const root = `test-fixtures/analyzer-componentDir`;
+          const root = 'test-fixtures/analyzer-componentDir';
           const sourceFiles =
               ['my-component.js'].map((p) => path.resolve(root, p));
           const config = new ProjectConfig({
-            root: root,
+            root,
             entrypoint: 'my-component.js',
             sources: sourceFiles,
 
@@ -158,11 +154,9 @@ suite('Analyzer', () => {
                     root, 'node_modules/a_component/a_component.js')));
               });
         });
-
   });
 
   suite('.dependencies', () => {
-
     test('outputs all dependencies needed by source', () => {
       const foundDependencies = new Set();
       const root = `test-fixtures/analyzer-data`;
@@ -228,15 +222,14 @@ suite('Analyzer', () => {
                     foundDependencies.has(path.resolve(root, 'shared-2.html')));
               });
         });
-
   });
 
   test(
-      'propagates an error when a dependency filepath is analyzed but cannot be found',
+      'propagates an error when a dependency URL is analyzed but cannot be found',
       (done) => {
         const root = `test-fixtures/bad-src-import`;
         const config = new ProjectConfig({
-          root: root,
+          root,
           entrypoint: 'index.html',
           sources: ['src/**/*'],
         });
@@ -250,7 +243,6 @@ suite('Analyzer', () => {
             done();
           }
         };
-
         analyzer.sources().pipe(new NoopStream());
         analyzer.sources().on('error', errorListener);
         analyzer.dependencies().pipe(new NoopStream());
@@ -262,7 +254,7 @@ suite('Analyzer', () => {
       (done) => {
         const root = `test-fixtures/bad-dependency-import`;
         const config = new ProjectConfig({
-          root: root,
+          root,
           entrypoint: 'index.html',
           sources: ['src/**/*'],
         });
@@ -353,7 +345,6 @@ suite('Analyzer', () => {
     return waitFor(analyzer.sources()).then(() => {
       assert.isTrue(analyzer.warnings.size === 0);
     });
-
   });
 
   test('calling sources() starts analysis', async () => {

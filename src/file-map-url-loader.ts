@@ -13,7 +13,6 @@
  */
 
 import {UrlLoader} from 'polymer-analyzer';
-import {parseUrl} from 'polymer-analyzer/lib/core/utils';
 import {ResolvedUrl} from 'polymer-analyzer/lib/model/url';
 
 import {getFileContents} from './streams';
@@ -28,7 +27,7 @@ export class FileMapUrlLoader implements UrlLoader {
   files: Map<string, File>;
   fallbackLoader?: UrlLoader;
 
-  constructor(files: Map<string, File>, fallbackLoader?: UrlLoader) {
+  constructor(files: Map<ResolvedUrl, File>, fallbackLoader?: UrlLoader) {
     this.files = files;
     this.fallbackLoader = fallbackLoader;
   }
@@ -42,7 +41,7 @@ export class FileMapUrlLoader implements UrlLoader {
   // Try to load the file from the map.  If not in the map, try to load
   // from the fallback loader.
   async load(url: ResolvedUrl): Promise<string> {
-    const file = this.files.get(parseUrl(url).pathname)!;
+    const file = this.files.get(url)!;
 
     if (file == null) {
       if (this.fallbackLoader) {

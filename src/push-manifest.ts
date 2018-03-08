@@ -13,7 +13,7 @@
  */
 
 import * as path from 'path';
-import {Analyzer, Document, Import} from 'polymer-analyzer';
+import {Analyzer, Import, ResolvedUrl} from 'polymer-analyzer';
 import {buildDepsIndex} from 'polymer-bundler/lib/deps-index';
 import {ProjectConfig} from 'polymer-project-config';
 import File = require('vinyl');
@@ -125,13 +125,14 @@ function createPushEntryFromImport(importFeature: Import): PushManifestEntry {
 async function generatePushManifestEntryForUrl(
     analyzer: Analyzer, url: string): Promise<PushManifestEntryCollection> {
   const analysis = await analyzer.analyze([url]);
-  const analyzedDocument = analysis.getDocument(url);
+  const analyzedResult = analysis.getDocument(url);
 
-  if (!(analyzedDocument instanceof Document)) {
-    const message = analyzedDocument && analyzedDocument.message || 'unknown';
+  if (analyzedResult.successful === false) {
+    const message = analyzedResult.error.message || 'unknown';
     throw new Error(`Unable to get document ${url}: ${message}`);
   }
 
+  const analyzedDocument = analyzedResult.value;
   const rawImports = [...analyzedDocument.getFeatures({
     kind: 'import',
     externalPackages: true,
@@ -164,7 +165,7 @@ async function generatePushManifestEntryForUrl(
  * manifest that gets injected into the stream.
  */
 export class AddPushManifest extends AsyncTransformStream<File, File> {
-  files: Map<string, File>;
+  files: Map<ResolvedUrl, File>;
   outPath: string;
   private config: ProjectConfig;
   private analyzer: Analyzer;
@@ -182,7 +183,9 @@ export class AddPushManifest extends AsyncTransformStream<File, File> {
   protected async *
       _transformIter(files: AsyncIterable<File>): AsyncIterable<File> {
     for await (const file of files) {
-      this.files.set(urlFromPath(this.config.root, file.path), file);
+      this.files.set(
+          this.analyzer.resolveUrl(urlFromPath(this.config.root, file.path)),
+          file);
       yield file;
     }
 
@@ -203,14 +206,14 @@ export class AddPushManifest extends AsyncTransformStream<File, File> {
     const allFragments =
         new Set((await buildDepsIndex(
                      this.config.allFragments.map(
-                         (path) => urlFromPath(this.config.root, path)),
+                         (path) => this.analyzer.resolveUrl(path)),
                      this.analyzer))
                     .entrypointToDeps.keys());
 
     // If an app-shell exists, use that as our main push URL because it has a
     // reliable URL. Otherwise, support the single entrypoint URL.
-    const mainPushEntrypointUrl = urlFromPath(
-        this.config.root, this.config.shell || this.config.entrypoint);
+    const mainPushEntrypointUrl =
+        this.analyzer.resolveUrl(this.config.shell || this.config.entrypoint);
     allFragments.add(mainPushEntrypointUrl);
 
     // Generate the dependencies to push for each fragment.

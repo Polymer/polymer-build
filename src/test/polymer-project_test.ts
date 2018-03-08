@@ -16,8 +16,9 @@
 
 
 import {assert} from 'chai';
-import {Analyzer, FSUrlLoader} from 'polymer-analyzer';
+import {Analyzer, FSUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 import {Bundle} from 'polymer-bundler/lib/bundle-manifest';
+
 import File = require('vinyl');
 import * as path from 'path';
 
@@ -27,7 +28,6 @@ import {waitFor} from '../streams';
 const testProjectRoot = path.resolve('test-fixtures/test-project');
 
 suite('PolymerProject', () => {
-
   let defaultProject: PolymerProject;
 
   const unroot = ((p: string) => p.substring(testProjectRoot.length + 1));
@@ -82,7 +82,6 @@ suite('PolymerProject', () => {
   });
 
   suite('.bundler()', () => {
-
     test('returns a different bundler each time', () => {
       const bundlerA = defaultProject.bundler();
       const bundlerB = defaultProject.bundler();
@@ -90,10 +89,15 @@ suite('PolymerProject', () => {
     });
 
     test('takes options to configure bundler', () => {
+      const analyzer = new Analyzer({
+        urlLoader: new FSUrlLoader('test-fixtures/test-project'),
+        urlResolver:
+            new PackageUrlResolver({packageDir: 'test-fixtures/test-project'}),
+      });
       const bundler = defaultProject.bundler({
-        analyzer: new Analyzer(
-            {urlLoader: new FSUrlLoader('test-fixtures/test-project')}),
-        excludes: ['bower_components/loads-external-dependencies.html'],
+        analyzer,
+        excludes: [analyzer.resolveUrl(
+            'bower_components/loads-external-dependencies.html')],
         inlineCss: true,
         inlineScripts: false,
         rewriteUrlsInTemplates: true,
@@ -101,14 +105,14 @@ suite('PolymerProject', () => {
         strategy: (b) => b,
         // TODO(usergenic): Replace this with a BundleUrlMapper when
         // https://github.com/Polymer/polymer-bundler/pull/483 is released.
-        urlMapper: (b) => new Map(<[string, Bundle][]>b.map((b) => ['x', b])),
+        urlMapper: (b) => new Map(<[ResolvedUrl, Bundle][]>b.map(
+            (b) => [analyzer.resolveUrl('x'), b])),
       });
       assert.isOk(bundler);
     });
   });
 
   suite('.dependencies()', () => {
-
     test('reads dependencies', (done) => {
       const files: File[] = [];
       const dependencyStream = defaultProject.dependencies();
@@ -175,7 +179,5 @@ suite('PolymerProject', () => {
             done();
           });
         });
-
   });
-
 });

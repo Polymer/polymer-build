@@ -15,7 +15,8 @@
 /// <reference path="../../node_modules/@types/mocha/index.d.ts" />
 
 import {assert} from 'chai';
-import {Bundle} from 'polymer-bundler/lib/bundle-manifest';
+import {PackageRelativeUrl, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
+import {Bundle} from 'polymer-bundler';
 import {ProjectConfig, ProjectOptions} from 'polymer-project-config';
 
 import File = require('vinyl');
@@ -27,6 +28,7 @@ const mergeStream = require('merge-stream');
 
 import {BuildAnalyzer} from '../analyzer';
 import {BuildBundler, Options as BuildBundlerOptions} from '../bundle';
+import {urlFromPath} from '../path-transformers';
 import {AsyncTransformStream} from '../streams';
 
 const defaultRoot = path.resolve('test-fixtures/bundler-data');
@@ -46,9 +48,8 @@ class FileTransform extends AsyncTransformStream<File, {}> {
 }
 
 suite('BuildBundler', () => {
-
-  let root: string;
   let bundler: BuildBundler;
+  let analyzer: BuildAnalyzer;
   let bundledStream: Stream;
   let files: Map<string, File>;
 
@@ -56,11 +57,9 @@ suite('BuildBundler', () => {
       projectOptions: ProjectOptions,
       bundlerOptions?: BuildBundlerOptions,
       transform?: FileTransform) => new Promise((resolve, reject) => {
-
     assert.isDefined(projectOptions.root);
-    root = projectOptions.root;
     const config = new ProjectConfig(projectOptions);
-    const analyzer = new BuildAnalyzer(config);
+    analyzer = new BuildAnalyzer(config);
 
     bundler = new BuildBundler(config, analyzer, bundlerOptions);
     bundledStream = mergeStream(analyzer.sources(), analyzer.dependencies());
@@ -69,9 +68,11 @@ suite('BuildBundler', () => {
     }
     bundledStream = bundledStream.pipe(bundler);
     bundler = new BuildBundler(config, analyzer);
-    files = new Map();
+    files = new Map<ResolvedUrl, File>();
     bundledStream.on('data', (file: File) => {
-      files.set(file.path, file);
+      files.set(
+          analyzer.analyzer.resolveUrl(urlFromPath(config.root, file.path)),
+          file);
     });
     bundledStream.on('end', () => {
       resolve(files);
@@ -88,8 +89,7 @@ suite('BuildBundler', () => {
   });
 
   const getFile = (filename: string) => {
-    // we're getting FS paths, so add root
-    const file = files.get(path.resolve(root, filename));
+    const file = files.get(analyzer.analyzer.resolveUrl(filename));
     return file && file.contents && file.contents.toString();
   };
 
@@ -279,7 +279,7 @@ suite('BuildBundler', () => {
   test('bundler loads changed files from stream', async () => {
     await setupTest(
         {
-          root: path.resolve('test-fixtures/bundle-project'),
+          root: 'test-fixtures/bundle-project',
           entrypoint: 'index.html',
         },
         {},
@@ -366,7 +366,7 @@ suite('BuildBundler', () => {
   test('bundler outputs html imports that are not inlined', async () => {
     await setupTest(
         {root: defaultRoot, entrypoint: 'entrypoint-only.html'},
-        {excludes: ['framework.html']});
+        {excludes: [analyzer.analyzer.resolveUrl('framework.html')]});
     // We should have an entrypoint-only.html file (bundled).
     assert.isOk(getFile('entrypoint-only.html'));
     // We should have the html import that was excluded from inlining.
@@ -379,8 +379,7 @@ suite('BuildBundler', () => {
       entrypoint: 'index.html',
     });
     assert.deepEqual(
-        [...files.keys()].sort(),
-        [path.resolve('test-fixtures/bundle-project/index.html')]);
+        [...files.keys()].sort(), [analyzer.analyzer.resolveUrl('index.html')]);
   });
 
   test('bundler does output scripts and styles not inlined', async () => {
@@ -393,25 +392,27 @@ suite('BuildBundler', () => {
           inlineCss: false,
           inlineScripts: false,
         });
-    assert.deepEqual([...files.keys()].sort(), [
-      'test-fixtures/bundle-project/index.html',
-      'test-fixtures/bundle-project/simple-script.js',
-      'test-fixtures/bundle-project/simple-style.css'
-    ].map((p) => path.resolve(p)));
+    assert.deepEqual(
+        [...files.keys()].sort(),
+        ['index.html', 'simple-script.js', 'simple-style.css'].map(
+            (p) => analyzer.analyzer.resolveUrl(p)));
   });
 
   suite('options', () => {
-
     const projectOptions = {
-      root: 'test-fixtures/test-project',
+      root: path.resolve('test-fixtures/test-project'),
       entrypoint: 'index.html',
       fragments: ['shell.html'],
     };
-
+    const urlResolver = new PackageUrlResolver({
+      packageDir: projectOptions.root,
+    });
     test('excludes: html file urls listed are not inlined', async () => {
-      await setupTest(
-          projectOptions,
-          {excludes: ['bower_components/loads-external-dependencies.html']});
+      await setupTest(projectOptions, {
+        excludes: [urlResolver.resolve(
+            'bower_components/loads-external-dependencies.html' as
+            PackageRelativeUrl)]
+      });
       assert.isOk(
           getFile('bower_components/loads-external-dependencies.html'),
           'Excluded import is passed through the bundler');
@@ -421,7 +422,9 @@ suite('BuildBundler', () => {
     });
 
     test('excludes: html files in folders listed are not inlined', async () => {
-      await setupTest(projectOptions, {excludes: ['bower_components/']});
+      await setupTest(
+          projectOptions,
+          {excludes: [analyzer.analyzer.resolveUrl('bower_components/')]});
       assert.include(
           getFile('shell.html'),
           '<link rel="import" href="bower_components/dep.html">');
@@ -491,7 +494,7 @@ suite('BuildBundler', () => {
         // Custom strategy creates a separate bundle for everything in the
         // `bower_components` folder.
         strategy: (bundles) => {
-          const bowerBundle = new Bundle();
+          const bowerBundle = new Bundle('html-fragment');
           bundles.forEach((bundle) => {
             bundle.files.forEach((file) => {
               if (file.includes('bower_components')) {
@@ -512,9 +515,12 @@ suite('BuildBundler', () => {
     test('urlMapper: fn(), applies bundle url mapper function', async () => {
       await setupTest(projectOptions, {
         urlMapper: (bundles) => {
-          const map = new Map<string, Bundle>();
+          const map = new Map<ResolvedUrl, Bundle>();
           for (const bundle of bundles) {
-            map.set(`bundled/${Array.from(bundle.entrypoints)}`, bundle);
+            map.set(
+                analyzer.analyzer.resolveUrl(
+                    `bundled/${Array.from(bundle.entrypoints)}`),
+                bundle);
           }
           return map;
         }

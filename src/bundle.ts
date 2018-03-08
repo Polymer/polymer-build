@@ -13,13 +13,13 @@
  */
 
 import File = require('vinyl');
-import * as parse5 from 'parse5';
+import {PackageRelativeUrl, ResolvedUrl} from 'polymer-analyzer';
 import {Bundler, Options, BundleManifest, generateShellMergeStrategy} from 'polymer-bundler';
 import {ProjectConfig} from 'polymer-project-config';
 
 import {BuildAnalyzer} from './analyzer';
 import {FileMapUrlLoader} from './file-map-url-loader';
-import {pathFromUrl, urlFromPath} from './path-transformers';
+import {pathFromResolvedUrl, urlFromPath} from './path-transformers';
 import {AsyncTransformStream} from './streams';
 
 export {Options} from 'polymer-bundler';
@@ -34,7 +34,7 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
   // coming into the stream, it collects all files here.  After bundlling,
   // we remove files from this set that have been inlined and replace
   // entrypoint/fragment files with bundled versions.
-  files = new Map<string, File>();
+  private _files = new Map<ResolvedUrl, File>();
 
   constructor(
       config: ProjectConfig,
@@ -59,15 +59,15 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
     let {strategy} = options;
 
     const urlLoader =
-        new FileMapUrlLoader(this.files, analyzer || buildAnalyzer.analyzer);
+        new FileMapUrlLoader(this._files, analyzer || buildAnalyzer.analyzer);
 
     const forkedAnalyzer = analyzer ? analyzer._fork({urlLoader}) :
                                       buildAnalyzer.analyzer._fork({urlLoader});
 
     strategy = strategy ||
         this.config.shell &&
-            generateShellMergeStrategy(
-                urlFromPath(this.config.root, this.config.shell));
+            generateShellMergeStrategy(forkedAnalyzer.resolveUrl(
+                urlFromPath(this.config.root, this.config.shell)));
 
     this._bundler = new Bundler({
       analyzer: forkedAnalyzer,
@@ -88,7 +88,7 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
       this._mapFile(file);
     }
     await this._buildBundles();
-    for (const file of this.files.values()) {
+    for (const file of this._files.values()) {
       yield file;
     }
   }
@@ -106,34 +106,40 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
     this._unmapBundledFiles(manifest);
 
     // Map the bundles into the file map.
-    for (const [filename, document] of documents) {
+    for (const [url, document] of documents) {
       this._mapFile(new File({
-        path: pathFromUrl(this.config.root, filename),
-        contents: new Buffer(parse5.serialize(document.ast)),
+        path: pathFromResolvedUrl(url),
+        contents: new Buffer(document.content),
       }));
     }
   }
 
   private async _generateBundleManifest(): Promise<BundleManifest> {
     const entrypoints = Array.from(this.config.allFragments)
-                            .map((e) => urlFromPath(this.config.root, e));
+                            .map(
+                                (e) => this._bundler.analyzer.resolveUrl(
+                                    urlFromPath(this.config.root, e)));
     return this._bundler.generateManifest(entrypoints);
   }
 
-  private _getFilesChangedSinceInitialAnalysis(): string[] {
+  private _getFilesChangedSinceInitialAnalysis(): PackageRelativeUrl[] {
     const filesChanged = [];
     for (const [url, originalFile] of this._buildAnalyzer.files) {
-      const downstreamFile = this.files.get(url);
-      if (downstreamFile.contents.toString() !==
-          originalFile.contents.toString()) {
-        filesChanged.push(url);
+      const downstreamFile = this._files.get(url);
+      if (downstreamFile &&
+          downstreamFile.contents.toString() !==
+              originalFile.contents.toString()) {
+        filesChanged.push(this._bundler.analyzer.urlResolver.relative(url));
       }
     }
     return filesChanged;
   }
 
   private _mapFile(file: File) {
-    this.files.set(urlFromPath(this.config.root, file.path), file);
+    this._files.set(
+        this._bundler.analyzer.resolveUrl(
+            urlFromPath(this.config.root, file.path)),
+        file);
   }
 
   /**
@@ -145,7 +151,7 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
                 inlinedStyles} of manifest.bundles.values()) {
       for (const filename of
                [...inlinedHtmlImports, ...inlinedScripts, ...inlinedStyles]) {
-        this.files.delete(filename);
+        this._files.delete(filename);
       }
     }
   }

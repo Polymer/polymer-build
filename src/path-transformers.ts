@@ -51,6 +51,8 @@
  */
 
 import * as path from 'path';
+import {ResolvedUrl} from 'polymer-analyzer';
+import {parse} from 'url';
 
 /**
  * Returns a properly encoded URL representing the relative URL from the root
@@ -82,6 +84,9 @@ export function pathFromUrl(root: string, url: string) {
       path.posix.join(posixifyPath(root), path.posix.join('/', url))));
 }
 
+export function pathFromResolvedUrl(url: ResolvedUrl): string {
+  return decodeURIComponent(parse(url).pathname);
+}
 /**
  * Returns a string where all Windows path separators are converted to forward
  * slashes.
