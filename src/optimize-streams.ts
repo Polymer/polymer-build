@@ -29,11 +29,10 @@ const minifyPreset = require('babel-preset-minify');
 const babelPresetES2015NoModules =
     babelPresetES2015.buildPreset({}, {modules: false});
 const externalHelpersPlugin = require('babel-plugin-external-helpers');
-const babelObjectRestSpreadPlugin =
+const dynamicImportSyntax = require('babel-plugin-syntax-dynamic-import');
+const objectRestSpreadTransform =
     require('babel-plugin-transform-object-rest-spread');
-const babelPluginSyntaxDynamicImport =
-    require('babel-plugin-syntax-dynamic-import');
-const babelPluginSyntaxObjectRestSpread =
+const objectRestSpreadSyntax =
     require('babel-plugin-syntax-object-rest-spread');
 
 // TODO(fks) 09-22-2016: Latest npm type declaration resolves to a non-module
@@ -49,23 +48,15 @@ export type CSSOptimizeOptions = {
 };
 export interface OptimizeOptions {
   html?: {
-    minify?:
-        boolean|{
-          exclude?: string[]
-        }
+    minify?: boolean|{exclude?: string[]},
   };
   css?: {
-    minify?:
-        boolean|{
-          exclude?: string[]
-        }
+    minify?: boolean|{exclude?: string[]},
   };
   js?: {
     minify?: boolean|{exclude?: string[]},
-    compile?:
-        boolean|{
-          exclude?: string[]
-        }
+    compile?: boolean|{exclude?: string[]},
+    moduleResolution?: 'node',
   };
 }
 ;
@@ -119,17 +110,25 @@ export class GenericOptimizeTransform extends Transform {
  * Transpile JavaScript to ES5 using Babel.
  */
 export class JSCompileTransform extends GenericOptimizeTransform {
-  constructor() {
-    const transformer = (content: string, file: File) =>
-        babelTransform(content, {
-          presets: [babelPresetES2015NoModules],
-          plugins: [
+  constructor(options: OptimizeOptions['js']) {
+    const transformer = (content: string, file: File) => {
+      const presets = [];
+      const plugins = [
+        objectRestSpreadSyntax,
+        dynamicImportSyntax,
+      ];
+      if (options.compile) {
+        presets.push(babelPresetES2015NoModules);
+        plugins.push(
             externalHelpersPlugin,
-            babelObjectRestSpreadPlugin,
-            babelPluginSyntaxDynamicImport,
-            resolveBareSpecifiers(file.path, false),
-          ]
-        }).code!;
+            objectRestSpreadTransform,
+        );
+      }
+      if (options.moduleResolution === 'node') {
+        plugins.push(resolveBareSpecifiers(file.path, false));
+      }
+      return babelTransform(content, {presets, plugins}).code!
+    };
     super('babel-compile', transformer);
   }
 }
@@ -143,8 +142,8 @@ export class JSMinifyTransform extends GenericOptimizeTransform {
         babelTransform(content, {
           presets: [minifyPreset(null, {simplifyComparisons: false})],
           plugins: [
-            babelPluginSyntaxObjectRestSpread,
-            babelPluginSyntaxDynamicImport,
+            objectRestSpreadSyntax,
+            dynamicImportSyntax,
           ]
         }).code!;
     super('babel-minify', transformer);
@@ -204,12 +203,13 @@ export function getOptimizeStreams(options?: OptimizeOptions):
   const streams = [];
 
   // compile ES6 JavaScript using babel
-  if (options.js && options.js.compile) {
+  if (options.js &&
+      (options.js.compile || options.js.moduleResolution === 'node')) {
     // TODO(aomarks) We should probably always do module name-to-path remapping,
     // or at least put it behind a different option, right?
     streams.push(gulpif(
         matchesExtAndNotExcluded('.js', options.js.compile),
-        new JSCompileTransform()));
+        new JSCompileTransform(options.js)));
   }
 
   // minify code (minify should always be the last transform)

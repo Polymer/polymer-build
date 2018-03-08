@@ -89,7 +89,7 @@ suite('optimize-streams', () => {
 
       const result = await testStream(pipeStreams([
         vfs.src([{path: filePath, contents}]),
-        getOptimizeStreams({js: {compile: true}})
+        getOptimizeStreams({js: {moduleResolution: 'node'}}),
       ]));
       assert.deepEqual(result.contents.toString().trim(), expected.trim());
     });
@@ -125,7 +125,7 @@ suite('optimize-streams', () => {
       const result = await testStream(pipeStreams([
         vfs.src([{path: filePath, contents}]),
         htmlSplitter.split(),
-        getOptimizeStreams({js: {compile: true}}),
+        getOptimizeStreams({js: {moduleResolution: 'node'}}),
         htmlSplitter.rejoin()
       ]));
       assert.deepEqual(result.contents.toString().trim(), expected.trim());
