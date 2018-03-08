@@ -205,8 +205,6 @@ export function getOptimizeStreams(options?: OptimizeOptions):
   // compile ES6 JavaScript using babel
   if (options.js &&
       (options.js.compile || options.js.moduleResolution === 'node')) {
-    // TODO(aomarks) We should probably always do module name-to-path remapping,
-    // or at least put it behind a different option, right?
     streams.push(gulpif(
         matchesExtAndNotExcluded('.js', options.js.compile),
         new JSCompileTransform(options.js)));
