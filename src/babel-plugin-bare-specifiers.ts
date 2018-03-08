@@ -15,6 +15,7 @@
 import {dirname, relative} from 'path';
 import resolve = require('resolve');
 import {NodePath} from 'babel-traverse';
+import * as url from 'url';
 import {ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration} from 'babel-types';
 
 const exportExtensions = require('babel-plugin-syntax-export-extensions');
@@ -41,6 +42,10 @@ export const resolveBareSpecifiers =
           }
 
           const specifier = node.source.value;
+
+          if (url.parse(specifier).protocol) {
+            return;
+          }
 
           if (isPathSpecifier(specifier)) {
             return;
