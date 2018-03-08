@@ -15,7 +15,8 @@
 import {dirname, relative} from 'path';
 import resolve = require('resolve');
 import {NodePath} from 'babel-traverse';
-import * as url from 'url';
+import * as isWindows from 'is-windows';
+import * as whatwgUrl from 'whatwg-url';
 import {ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration} from 'babel-types';
 
 const exportExtensions = require('babel-plugin-syntax-export-extensions');
@@ -43,7 +44,7 @@ export const resolveBareSpecifiers =
 
           const specifier = node.source.value;
 
-          if (url.parse(specifier).protocol) {
+          if (whatwgUrl.parseURL(specifier) !== null) {
             return;
           }
 
@@ -57,7 +58,7 @@ export const resolveBareSpecifiers =
           let relativeSpecifierUrl =
               relative(dirname(filePath), resolvedSpecifier);
 
-          if (process.platform === 'win32') {
+          if (isWindows()) {
             relativeSpecifierUrl = relativeSpecifierUrl.replace(/\\/g, '/');
           }
 

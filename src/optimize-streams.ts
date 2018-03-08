@@ -109,11 +109,12 @@ export class GenericOptimizeTransform extends Transform {
 /**
  * Transpile JavaScript to ES5 using Babel.
  */
-export class JSCompileTransform extends GenericOptimizeTransform {
+export class JsTransform extends GenericOptimizeTransform {
   constructor(options: OptimizeOptions['js']) {
     const transformer = (content: string, file: File) => {
       const presets = [];
       const plugins = [
+        // Syntax plugins for >ES2015 features we support.
         objectRestSpreadSyntax,
         dynamicImportSyntax,
       ];
@@ -127,26 +128,12 @@ export class JSCompileTransform extends GenericOptimizeTransform {
       if (options.moduleResolution === 'node') {
         plugins.push(resolveBareSpecifiers(file.path, false));
       }
+      if (options.minify) {
+        presets.push(minifyPreset(null, {simplifyComparisons: false}));
+      }
       return babelTransform(content, {presets, plugins}).code!
     };
     super('babel-compile', transformer);
-  }
-}
-
-/**
- * Minify JavaScript using Babel.
- */
-export class JSMinifyTransform extends GenericOptimizeTransform {
-  constructor() {
-    const transformer = (content: string) =>
-        babelTransform(content, {
-          presets: [minifyPreset(null, {simplifyComparisons: false})],
-          plugins: [
-            objectRestSpreadSyntax,
-            dynamicImportSyntax,
-          ]
-        }).code!;
-    super('babel-minify', transformer);
   }
 }
 
@@ -202,12 +189,13 @@ export function getOptimizeStreams(options?: OptimizeOptions):
   options = options || {};
   const streams = [];
 
-  // compile ES6 JavaScript using babel
+  // compile and/or minify ES6 JavaScript using babel
   if (options.js &&
-      (options.js.compile || options.js.moduleResolution === 'node')) {
+      (options.js.compile || options.js.minify ||
+       options.js.moduleResolution === 'node')) {
     streams.push(gulpif(
         matchesExtAndNotExcluded('.js', options.js.compile),
-        new JSCompileTransform(options.js)));
+        new JsTransform(options.js)));
   }
 
   // minify code (minify should always be the last transform)
@@ -226,11 +214,6 @@ export function getOptimizeStreams(options?: OptimizeOptions):
     streams.push(gulpif(
         matchesExtAndNotExcluded('.html', options.css.minify),
         new InlineCSSOptimizeTransform({stripWhitespace: true})));
-  }
-  if (options.js && options.js.minify) {
-    streams.push(gulpif(
-        matchesExtAndNotExcluded('.js', options.js.minify),
-        new JSMinifyTransform()));
   }
 
   return streams;
