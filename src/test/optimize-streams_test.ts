@@ -80,11 +80,19 @@ suite('optimize-streams', () => {
       import { dep1 } from 'dep1';
       import { dep2 } from 'dep2';
       import { dep2A } from 'dep2/a';
+
+      import { depX } from '/already/a/path.js';
+      import { depY } from './already/a/path.js';
+      import { depZ } from '../already/a/path.js';
       `);
       const expected = stripIndent(`
       import { dep1 } from './node_modules/dep1/index.js';
       import { dep2 } from './node_modules/dep2/dep2.js';
       import { dep2A } from './node_modules/dep2/a.js';
+
+      import { depX } from '/already/a/path.js';
+      import { depY } from './already/a/path.js';
+      import { depZ } from '../already/a/path.js';
       `);
 
       const result = await testStream(pipeStreams([
