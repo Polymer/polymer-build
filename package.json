@@ -35,7 +35,7 @@
     "@types/vinyl-fs": "0.0.28",
     "babel-plugin-syntax-export-extensions": "^6.13.0",
     "babel-traverse": "^6.26.0",
-    "css-slam": "^2.0.2",
+    "css-slam": "^2.1.0",
     "dom5": "^2.3.0",
     "gulp-if": "^2.0.2",
     "html-minifier": "^3.5.10",
