@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- Add new, unreleased changes here. -->
 
 ## [2.3.0] - 2018-03-12
-* JS compilation features from polymer-cli and polyserve have been moved into this package.
+* JS compile and other "optimize streams" build transformers have been moved from polyer-cli into this package.
+* JS compile build transformer wil now rewrite bare module specifiers to paths.
+* Module bare specifier rewriting Babel plugin has been moved from polyserve into this package.
+* MOdule bare specifier rewriting Babel plugin now works on Windows, does not rewrite fully qualified URLs, and will follow the "module" or "jsnext:main" fields when a package.json uses them instead of "main".
 
 ## [2.2.0] - 2018-02-23
 * Fixed issue where the build silently fails when several source dependencies are missing
