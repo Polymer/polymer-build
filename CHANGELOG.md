@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
 
+## [2.3.0] - 2018-03-12
+* JS compilation features from polymer-cli and polyserve have been moved into this package.
+
 ## [2.2.0] - 2018-02-23
 * Fixed issue where the build silently fails when several source dependencies are missing
 * If the ProjectConfig given to BuildAnalyzer has a `componentDir`, pass a PackageUrlResolver using that `componentDir` to the underlying Analyzer.
