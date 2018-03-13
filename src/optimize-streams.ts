@@ -110,7 +110,7 @@ export class GenericOptimizeTransform extends Transform {
 }
 
 /**
- * Transpile JavaScript to ES5 using Babel.
+ * Transform JavaScript using Babel.
  */
 export class JsTransform extends GenericOptimizeTransform {
   constructor(options: OptimizeOptions['js']) {
@@ -118,7 +118,6 @@ export class JsTransform extends GenericOptimizeTransform {
         options.compile ? notExcluded(options.compile) : () => false;
     const shouldMinifyFile =
         options.minify ? notExcluded(options.minify) : () => false;
-    const nodeResolution = options.moduleResolution === 'node';
 
     const transformer = (content: string, file: File) => {
       // Note that Babel plugins run in this order:
@@ -138,7 +137,7 @@ export class JsTransform extends GenericOptimizeTransform {
             babelTransformPluginObjectRestSpread,
         );
       }
-      if (nodeResolution) {
+      if (options.moduleResolution === 'node') {
         plugins.push(resolveBareSpecifiers(file.path, false));
       }
 
