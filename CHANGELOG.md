@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 <!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
+
 ## [2.3.2] - 2018-03-13
 * Fix bug where JS compilation/minification would ignore the "excludes" field.
 
