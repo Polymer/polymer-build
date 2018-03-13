@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 <!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
+* Fix dependency specification for `babel-core`
 
 ## [2.3.1] - 2018-03-12
 * Restore ES5 template literal uniquifying feature from https://github.com/Polymer/polymer-cli/pull/962 that was missed in earlier code migration.
