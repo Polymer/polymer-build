@@ -26,10 +26,9 @@ import matcher = require('matcher');
 
 import {resolveBareSpecifiers} from './babel-plugin-bare-specifiers';
 
-const babelPresetES2015 = require('babel-preset-es2015');
+const babelPresetEnv = require('babel-preset-env');
 const minifyPreset = require('babel-preset-minify');
-const babelPresetES2015NoModules =
-    babelPresetES2015.buildPreset({}, {modules: false});
+const babelPresetEnvNoModules = babelPresetEnv.default({}, {modules: false});
 const externalHelpersPlugin = require('babel-plugin-external-helpers');
 const dynamicImportSyntax = require('babel-plugin-syntax-dynamic-import');
 const objectRestSpreadTransform =
@@ -121,7 +120,7 @@ export class JsTransform extends GenericOptimizeTransform {
         dynamicImportSyntax,
       ];
       if (options.compile) {
-        presets.push(babelPresetES2015NoModules);
+        presets.push(babelPresetEnvNoModules);
         plugins.push(
             externalHelpersPlugin,
             objectRestSpreadTransform,
