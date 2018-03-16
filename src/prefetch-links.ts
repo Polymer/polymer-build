@@ -136,9 +136,9 @@ export function createLinks(
     if (absolute && !baseTagHref) {
       href = absUrl(dep);
     } else {
-      href = urlResolver.relative(
+      href = absUrl(urlResolver.relative(
           urlResolver.resolve(absUrl(baseUrl)),
-          urlResolver.resolve(absUrl(dep)));
+          urlResolver.resolve(absUrl(dep))));
     }
     const link = dom5.constructors.element('link');
     dom5.setAttribute(link, 'rel', 'prefetch');

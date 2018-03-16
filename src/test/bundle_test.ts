@@ -135,12 +135,9 @@ suite('BuildBundler', () => {
       entrypoint: 'entrypoint-only.html',
     });
     const doc = parse5(getFile('entrypoint-only.html'));
-    console.log(doc);
-    /*
     assert.isTrue(hasMarker(doc, 'framework'), 'has framework');
     assert.isFalse(hasImport(doc, 'framework.html'));
     assert.isNotOk(getFile('shared_bundle_1.html'));
-    */
   });
 
   test('two fragments', async () => {
@@ -414,6 +411,7 @@ suite('BuildBundler', () => {
       root: 'test-fixtures/test-project',
       entrypoint: 'index.html',
       fragments: ['shell.html'],
+      componentDir: 'bower_components',
     };
 
     test('excludes: html file urls listed are not inlined', async () => {

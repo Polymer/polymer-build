@@ -62,7 +62,6 @@ suite('Analyzer', () => {
             return analyzer.analyzeDependencies;
           })
           .then((depsIndex) => {
-            console.log(depsIndex);
             const ftd = depsIndex.fragmentToDeps;
             for (const frag of ftd.keys()) {
               assert.deepEqual(
