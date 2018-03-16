@@ -24,14 +24,17 @@ import {resolveBareSpecifiers} from './babel-plugin-bare-specifiers';
 const babelSyntaxPlugins = [
   require('babel-plugin-syntax-dynamic-import'),
   require('babel-plugin-syntax-object-rest-spread'),
+  require('babel-plugin-syntax-async-functions'),
+];
+const babelCompilePlugins = [
+  require('babel-plugin-transform-object-rest-spread'),
+  require('babel-plugin-transform-async-to-generator'),
 ];
 const babelPresetMinify =
     require('babel-preset-minify')({}, {simplifyComparisons: false});
 const babelPresetES2015NoModules =
     require('babel-preset-es2015').buildPreset({}, {modules: false});
 const babelPluginExternalHelpers = require('babel-plugin-external-helpers');
-const babelTransformPluginObjectRestSpread =
-    require('babel-plugin-transform-object-rest-spread');
 const babelTransformModulesAmd =
     require('babel-plugin-transform-es2015-modules-amd');
 
@@ -40,16 +43,24 @@ const babelTransformModulesAmd =
  */
 export interface JsTransformOptions {
   // Whether to compile JavaScript to ES5.
+  //
+  // Note that some JavaScript features may require the Babel helper polyfills,
+  // which this function will not insert and must be loaded separately.
   compileToEs5?: boolean;
+
   // Whether to minify JavaScript.
   minify?: boolean;
+
   // What kind of ES module resolution/remapping to apply.
   moduleResolution?: ModuleResolutionStrategy;
+
   // The path of the file being transformed, used for module resolution.
   filePath?: string;
+
   // For Polyserve or other servers with similar component directory mounting
   // behavior. Whether this is a request for a package in node_modules/.
   isComponentRequest?: boolean;
+
   // Whether to replace ES modules with AMD modules.
   transformEsModulesToAmd?: boolean;
 }
@@ -79,7 +90,7 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
     presets.push(babelPresetES2015NoModules);
     plugins.push(
         babelPluginExternalHelpers,
-        babelTransformPluginObjectRestSpread,
+        ...babelCompilePlugins,
     );
   }
   if (options.moduleResolution === 'node') {
