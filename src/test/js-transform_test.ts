@@ -42,12 +42,16 @@ suite('jsTransform', () => {
     assert.equal(jsTransform('const foo = 3;\n', {}), 'const foo = 3;\n');
   });
 
-  suite('dynamic import', () => {
-    const js = 'const foo = import("bar.js");';
+  suite('exponentiation', () => {
+    const js = 'const foo = 2**2;';
 
     test('minifies', () => {
+      assert.equal(jsTransform(js, {minify: true}), 'const foo=4;');
+    });
+
+    test('compiles to ES5', () => {
       assert.equal(
-          jsTransform(js, {minify: true}), 'const foo=import("bar.js");');
+          jsTransform(js, {compileToEs5: true}), 'var foo = Math.pow(2, 2);');
     });
   });
 
@@ -78,7 +82,7 @@ suite('jsTransform', () => {
     test('compiles to ES5', () => {
       assert.include(
           jsTransform(js, {compileToEs5: true}), 'babelHelpers.extends');
-    })
+    });
   });
 
   suite('async/await', () => {
@@ -93,8 +97,31 @@ suite('jsTransform', () => {
       assert.include(
           jsTransform(js, {compileToEs5: true}),
           'babelHelpers.asyncToGenerator');
-    })
-  })
+    });
+  });
+
+  suite('async generator', () => {
+    const js = 'async function* foo() { yield bar; }';
+
+    test('minifies', () => {
+      assert.equal(
+          jsTransform(js, {minify: true}), 'async function*foo(){yield bar}');
+    });
+
+    test('compiles to ES5', () => {
+      assert.include(
+          jsTransform(js, {compileToEs5: true}), 'babelHelpers.asyncGenerator');
+    });
+  });
+
+  suite('dynamic import', () => {
+    const js = 'const foo = import("bar.js");';
+
+    test('minifies', () => {
+      assert.equal(
+          jsTransform(js, {minify: true}), 'const foo=import("bar.js");');
+    });
+  });
 
   test('rewrites bare module specifiers to paths', () => {
     const fixtureRoot =
