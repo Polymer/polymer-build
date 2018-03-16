@@ -18,13 +18,11 @@ const mergeStream = require('merge-stream');
 import {PolymerProject} from '../polymer-project';
 import {createLinks} from '../prefetch-links';
 import {emittedFiles} from './util';
+import {PackageUrlResolver, PackageRelativeUrl} from 'polymer-analyzer';
 
 suite('prefetch-links', () => {
-
   suite('AddPrefetchLinks', () => {
-
     test('adds prefetch links for transitive deps of unbundled', async () => {
-
       const project = new PolymerProject({
         root: 'test-fixtures/bundle-project/',
         entrypoint: 'index.html',
@@ -50,7 +48,6 @@ suite('prefetch-links', () => {
     });
 
     test('add prefetch links for transitive deps of bundled', async () => {
-
       const project = new PolymerProject({
         root: 'test-fixtures/bundle-project/',
         entrypoint: 'index.html',
@@ -81,7 +78,6 @@ suite('prefetch-links', () => {
     });
 
     test('prefetch links do not include lazy dependencies', async () => {
-
       const project = new PolymerProject({
         root: 'test-fixtures/bundler-data/',
         entrypoint: 'index.html',
@@ -114,7 +110,6 @@ suite('prefetch-links', () => {
     });
 
     test('prefetch links are relative when base tag present', async () => {
-
       const project = new PolymerProject({
         root: 'test-fixtures/differential-serving/',
         entrypoint: 'index.html',
@@ -138,6 +133,7 @@ suite('prefetch-links', () => {
   });
 
   suite('createLinks', () => {
+    const urlResolver = new PackageUrlResolver();
     const html = '<html><body>foo</body></html>';
     const htmlWithBase = '<html><base href="/base/"><body>foo</body></html>';
     const deps = new Set([
@@ -146,24 +142,26 @@ suite('prefetch-links', () => {
     ]);
 
     test('with no base tag and absolute true', () => {
-      const url = 'index.html';
+      const url = 'index.html' as PackageRelativeUrl;
       const expected =
           ('<html>' +
            '<link rel="prefetch" href="/bower_components/polymer/polymer.html">' +
            '<link rel="prefetch" href="/src/my-icons.html">' +
            '<body>foo</body></html>');
-      const actual = createLinks(html, url, deps, true)
+      const actual =
+          createLinks(urlResolver, html, urlResolver.resolve(url), deps, true)
       assert.equal(actual, expected);
     });
 
     test('with a base tag and absolute true', () => {
-      const url = 'index.html';
+      const url = 'index.html' as PackageRelativeUrl;
       const expected =
           ('<html><base href="/base/">' +
            '<link rel="prefetch" href="bower_components/polymer/polymer.html">' +
            '<link rel="prefetch" href="src/my-icons.html">' +
            '<body>foo</body></html>');
-      const actual = createLinks(htmlWithBase, url, deps, true)
+      const actual = createLinks(
+          urlResolver, htmlWithBase, urlResolver.resolve(url), deps, true)
       assert.equal(actual, expected);
     });
   });

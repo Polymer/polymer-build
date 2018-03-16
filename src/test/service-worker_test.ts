@@ -23,16 +23,15 @@ import * as vfs from 'vinyl-fs';
 const temp = require('temp').track();
 const mergeStream = require('merge-stream');
 
+import {LocalFsPath} from '../path-transformers';
 import {PolymerProject} from '../polymer-project';
 import * as serviceWorker from '../service-worker';
 
 suite('service-worker', () => {
-
-  let testBuildRoot: string;
+  let testBuildRoot: LocalFsPath;
   let defaultProject: PolymerProject;
 
   setup((done) => {
-
     defaultProject = new PolymerProject({
       root: path.resolve('test-fixtures/test-project'),
       entrypoint: 'index.html',
@@ -46,7 +45,7 @@ suite('service-worker', () => {
       if (err) {
         return done(err);
       }
-      testBuildRoot = dir;
+      testBuildRoot = dir as LocalFsPath;
       vfs.src(path.join('test-fixtures/test-project/**'))
           .pipe(vfs.dest(dir))
           .on('end', () => {
@@ -55,7 +54,6 @@ suite('service-worker', () => {
                 .on('end', () => done())
                 .on('error', done);
           });
-
     });
   });
 
@@ -92,7 +90,6 @@ suite('service-worker', () => {
   });
 
   suite('generateServiceWorker()', () => {
-
     test('should throw when options are not provided', () => {
       return (<any>serviceWorker.generateServiceWorker)().then(
           () => {
@@ -219,7 +216,7 @@ suite('service-worker', () => {
           .generateServiceWorker({
             project: defaultProject,
             buildRoot: testBuildRoot,
-            basePath: '/my/base/path'
+            basePath: '/my/base/path' as LocalFsPath,
           })
           .then((swFile: Buffer) => {
             const fileContents = swFile.toString();
@@ -232,7 +229,7 @@ suite('service-worker', () => {
           .generateServiceWorker({
             project: defaultProject,
             buildRoot: testBuildRoot,
-            basePath: '/my/base/path/'
+            basePath: '/my/base/path/' as LocalFsPath,
           })
           .then((swFile: Buffer) => {
             const fileContents = swFile.toString();
@@ -240,12 +237,9 @@ suite('service-worker', () => {
             assert.notInclude(fileContents, '"/my/base/path//index.html"');
           });
     });
-
-
   });
 
   suite('addServiceWorker()', () => {
-
     test('should write generated service worker to file system', () => {
       return serviceWorker
           .addServiceWorker({
@@ -260,7 +254,5 @@ suite('service-worker', () => {
                 '// This generated service worker JavaScript will precache your site\'s resources.');
           });
     });
-
   });
-
 });

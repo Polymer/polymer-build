@@ -51,6 +51,12 @@
  */
 
 import * as path from 'path';
+import {PackageRelativeUrl} from 'polymer-analyzer';
+
+export declare class LocalFsPathBrand { private LocalFsPathBrand: never; }
+export type LocalFsPath = string&LocalFsPathBrand;
+export declare class PosixPathBrand { private PosixPathBrand: never; }
+export type PosixPath = string&PosixPathBrand;
 
 /**
  * Returns a properly encoded URL representing the relative URL from the root
@@ -58,11 +64,12 @@ import * as path from 'path';
  * the root.  We use this to map a file from the filesystem to the relative
  * URL that represents it in the build.
  */
-export function urlFromPath(root: string, target: string): string {
-  target = posixifyPath(target);
-  root = posixifyPath(root);
+export function urlFromPath(
+    root: LocalFsPath, target: LocalFsPath): PackageRelativeUrl {
+  const targetPosix = posixifyPath(target);
+  const rootPosix = posixifyPath(root);
 
-  const relativePath = path.posix.relative(root, target);
+  const relativePath = path.posix.relative(rootPosix, targetPosix);
 
   // The startsWith(root) check is important on Windows because of the case
   // where paths have different drive letters.  The startsWith('../') will
@@ -71,15 +78,16 @@ export function urlFromPath(root: string, target: string): string {
     throw new Error(`target path is not in root: ${target} (${root})`);
   }
 
-  return encodeURI(relativePath);
+  return encodeURI(relativePath) as PackageRelativeUrl;
 }
 
 /**
  * Returns a filesystem path for the url, relative to the root.
  */
-export function pathFromUrl(root: string, url: string) {
-  return path.normalize(decodeURI(
-      path.posix.join(posixifyPath(root), path.posix.join('/', url))));
+export function pathFromUrl(
+    root: LocalFsPath, url: PackageRelativeUrl): LocalFsPath {
+  return path.normalize(decodeURI(path.posix.join(
+             posixifyPath(root), path.posix.join('/', url)))) as LocalFsPath;
 }
 
 /**
@@ -91,12 +99,12 @@ export function pathFromUrl(root: string, url: string) {
  * module generates only forward-slash paths in building its `precacheConfig`
  * map.
  */
-export function posixifyPath(filepath: string): string {
+export function posixifyPath(filepath: LocalFsPath): PosixPath {
   // We don't want to change backslashes to forward-slashes in the case where
   // we're already on posix environment, because they would be intentional in
   // that case (albeit weird.)
   if (path.sep === '\\') {
-    filepath = filepath.replace(/\\/g, '/');
+    filepath = filepath.replace(/\\/g, '/') as string as LocalFsPath;
   }
-  return filepath;
+  return filepath as string as PosixPath;
 }
