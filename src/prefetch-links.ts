@@ -104,7 +104,10 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
           document.parsedDocument.contents,
           document.parsedDocument.baseUrl,
           prefetchUrls,
-          document.url === this._analyzer.resolveUrl(this._config.entrypoint));
+          document.url ===
+              this._analyzer.resolveUrl(urlFromPath(
+                  this._config.root as LocalFsPath,
+                  this._config.entrypoint as LocalFsPath)));
       const filePath = pathFromUrl(
           this._config.root as LocalFsPath,
           this._analyzer.urlResolver.relative(documentUrl));
@@ -123,7 +126,7 @@ export function createLinks(
     urlResolver: UrlResolver,
     html: string,
     baseUrl: ResolvedUrl,
-    deps: Set<string>,
+    deps: Set<ResolvedUrl>,
     absolute: boolean = false): string {
   const ast = parse5.parse(html, {locationInfo: true});
   const baseTag = dom5.query(ast, dom5.predicates.hasTagName('base'));
@@ -134,11 +137,9 @@ export function createLinks(
   for (const dep of deps) {
     let href;
     if (absolute && !baseTagHref) {
-      href = absUrl(dep);
+      href = absUrl(urlResolver.relative(dep));
     } else {
-      href = absUrl(urlResolver.relative(
-          urlResolver.resolve(absUrl(baseUrl)),
-          urlResolver.resolve(absUrl(dep))));
+      href = urlResolver.relative(baseUrl, dep);
     }
     const link = dom5.constructors.element('link');
     dom5.setAttribute(link, 'rel', 'prefetch');

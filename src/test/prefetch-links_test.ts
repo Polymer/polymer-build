@@ -139,7 +139,7 @@ suite('prefetch-links', () => {
     const deps = new Set([
       'bower_components/polymer/polymer.html',
       'src/my-icons.html',
-    ]);
+    ].map((u: any) => urlResolver.resolve(u)));
 
     test('with no base tag and absolute true', () => {
       const url = 'index.html' as PackageRelativeUrl;
