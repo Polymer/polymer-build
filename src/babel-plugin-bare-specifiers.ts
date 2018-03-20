@@ -20,6 +20,8 @@ import * as isWindows from 'is-windows';
 import * as whatwgUrl from 'whatwg-url';
 import {ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration} from 'babel-types';
 
+const pathIsInside = require('path-is-inside');
+
 const exportExtensions = require('babel-plugin-syntax-export-extensions');
 
 const isPathSpecifier = (s: string) => /^\.{0,2}\//.test(s);
@@ -71,12 +73,13 @@ export const resolveBareSpecifiers = (
       });
 
       let relativeSpecifierUrl: string;
-      // If we have an import from that cross the top-level / componentDir
+      // If we have an import that crosses the top-level / componentDir
       // boundary, fix up the path to generate polyserve-style ../ cross-package
       // imports.
       if (isComponentRequest && componentDir !== undefined &&
-          rootDir !== undefined && resolvedSpecifier.startsWith(componentDir) &&
-          !filePath.startsWith(componentDir)) {
+          rootDir !== undefined &&
+          pathIsInside(resolvedSpecifier, componentDir) &&
+          !pathIsInside(filePath, componentDir)) {
         const relativePathFromComponentDir =
             relative(componentDir, resolvedSpecifier);
         // Important: Create a URL pointing one level up from the root dir
