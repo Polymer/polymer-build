@@ -173,7 +173,13 @@ suite('jsTransform', () => {
       import { dep1 } from '../dep1/index.js';
     `);
 
-    const result = jsTransform(input, {moduleResolution: 'node', filePath});
+    const result = jsTransform(input, {
+      moduleResolution: 'node',
+      filePath,
+      isComponentRequest: true,
+      componentDir: path.join(fixtureRoot, 'node_modules'),
+      rootDir: fixtureRoot
+    });
     assert.equal(result.trim(), expected.trim());
   });
 
