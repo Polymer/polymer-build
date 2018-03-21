@@ -16,7 +16,7 @@
 
 
 import {assert} from 'chai';
-import {Analyzer, FSUrlLoader, PackageRelativeUrl, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
+import {Analyzer, FsUrlLoader, FsUrlResolver, PackageRelativeUrl, ResolvedUrl} from 'polymer-analyzer';
 import {Bundle} from 'polymer-bundler/lib/bundle-manifest';
 
 import File = require('vinyl');
@@ -89,12 +89,11 @@ suite('PolymerProject', () => {
     });
 
     test('takes options to configure bundler', () => {
-      const urlResolver =
-          new PackageUrlResolver({packageDir: 'test-fixtures/test-project'});
+      const urlResolver = new FsUrlResolver('test-fixtures/test-project');
       const bundler = defaultProject.bundler({
         analyzer: new Analyzer({
           urlResolver,
-          urlLoader: new FSUrlLoader('test-fixtures/test-project')
+          urlLoader: new FsUrlLoader('test-fixtures/test-project')
         }),
         excludes: ['bower_components/loads-external-dependencies.html'].map(
             (p) => urlResolver.resolve(p as PackageRelativeUrl)),

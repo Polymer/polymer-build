@@ -15,7 +15,7 @@
 /// <reference path="../../node_modules/@types/mocha/index.d.ts" />
 
 import {assert} from 'chai';
-import {PackageRelativeUrl, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
+import {FsUrlResolver, PackageRelativeUrl, ResolvedUrl} from 'polymer-analyzer';
 import {Bundle} from 'polymer-bundler';
 import {ProjectConfig, ProjectOptions} from 'polymer-project-config';
 
@@ -48,8 +48,7 @@ class FileTransform extends AsyncTransformStream<File, {}> {
 }
 
 function resolveUrls(root: string, urls: string[]): ResolvedUrl[] {
-  const resolver = new PackageUrlResolver(
-      {packageDir: root, componentDir: 'bower_components'});
+  const resolver = new FsUrlResolver(root);
   return urls.map((u) => resolver.resolve(u as PackageRelativeUrl));
 }
 
@@ -520,8 +519,7 @@ suite('BuildBundler', () => {
     });
 
     test('urlMapper: fn(), applies bundle url mapper function', async () => {
-      const urlResolver = new PackageUrlResolver(
-          {packageDir: projectOptions.root, componentDir: 'bower_components'});
+      const urlResolver = new FsUrlResolver(projectOptions.root);
       await setupTest(projectOptions, {
         urlMapper: (bundles: Bundle[]) => {
           const map = new Map<ResolvedUrl, Bundle>();

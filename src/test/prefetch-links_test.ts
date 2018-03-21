@@ -18,7 +18,7 @@ const mergeStream = require('merge-stream');
 import {PolymerProject} from '../polymer-project';
 import {createLinks} from '../prefetch-links';
 import {emittedFiles} from './util';
-import {PackageUrlResolver, PackageRelativeUrl} from 'polymer-analyzer';
+import {FsUrlResolver, PackageRelativeUrl} from 'polymer-analyzer';
 
 suite('prefetch-links', () => {
   suite('AddPrefetchLinks', () => {
@@ -133,7 +133,7 @@ suite('prefetch-links', () => {
   });
 
   suite('createLinks', () => {
-    const urlResolver = new PackageUrlResolver();
+    const urlResolver = new FsUrlResolver('');
     const html = '<html><body>foo</body></html>';
     const htmlWithBase = '<html><base href="/base/"><body>foo</body></html>';
     const deps = new Set([

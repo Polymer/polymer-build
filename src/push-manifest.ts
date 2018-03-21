@@ -125,7 +125,7 @@ function createPushEntryFromImport(importFeature: Import): PushManifestEntry {
  */
 async function generatePushManifestEntryForUrl(
     analyzer: Analyzer,
-    url: PackageRelativeUrl): Promise<PushManifestEntryCollection> {
+    url: ResolvedUrl): Promise<PushManifestEntryCollection> {
   const analysis = await analyzer.analyze([url]);
   const result = analysis.getDocument(url);
 
@@ -228,10 +228,10 @@ export class AddPushManifest extends AsyncTransformStream<File, File> {
     // Generate the dependencies to push for each fragment.
     const pushManifest: PushManifest = {};
     for (const fragment of allFragments) {
-      const absoluteFragmentUrl = fragment;
-      pushManifest[absoluteFragmentUrl] = await generatePushManifestEntryForUrl(
-          this.analyzer,
-          this.analyzer.urlResolver.relative(absoluteFragmentUrl));
+      const absoluteFragmentUrl =
+          '/' + this.analyzer.urlResolver.relative(fragment);
+      pushManifest[absoluteFragmentUrl] =
+          await generatePushManifestEntryForUrl(this.analyzer, fragment);
     }
 
     // The URLs we got may be absolute or relative depending on how they were

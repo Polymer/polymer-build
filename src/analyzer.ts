@@ -14,7 +14,7 @@
 
 import * as path from 'path';
 import * as logging from 'plylog';
-import {Analyzer, PackageRelativeUrl, PackageUrlResolver, ResolvedUrl, Severity, UrlLoader, Warning, WarningFilter, WarningPrinter} from 'polymer-analyzer';
+import {Analyzer, FsUrlResolver, PackageRelativeUrl, ResolvedUrl, Severity, UrlLoader, Warning, WarningFilter, WarningPrinter} from 'polymer-analyzer';
 import {parseUrl} from 'polymer-analyzer/lib/core/utils';
 import {ProjectConfig} from 'polymer-project-config';
 import {PassThrough, Transform} from 'stream';
@@ -131,9 +131,8 @@ export class BuildAnalyzer {
     this.analyzer = new Analyzer({
       urlLoader: this.loader,
       // TODO(usergenic): Add option to polymer-build to propagate a protocol
-      // and host option to the PackageUrlResolver.
-      urlResolver: new PackageUrlResolver(
-          {packageDir: config.root, componentDir: config.componentDir}),
+      // and host option to the FsUrlResolver.
+      urlResolver: new FsUrlResolver(config.root),
     });
 
     this.allFragmentsToAnalyze =
