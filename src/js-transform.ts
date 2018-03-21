@@ -139,6 +139,7 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
     plugins.push(resolveBareSpecifiers(
         options.filePath,
         !!options.isComponentRequest,
+        options.packageName,
         options.componentDir,
         options.rootDir));
   }

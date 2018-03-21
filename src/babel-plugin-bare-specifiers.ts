@@ -87,7 +87,7 @@ export const resolveBareSpecifiers = (
         }
         const relativePathFromComponentDir =
             relative(componentDir, resolvedSpecifier);
-        // Important: Create a URL pointingup from the root dir
+        // Important: Create a URL pointing up from the root dir
         const relativeDistance =
             packageName!.startsWith('@') ? '../../' : '../';
         relativeSpecifierUrl = relative(
