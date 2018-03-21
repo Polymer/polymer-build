@@ -92,7 +92,6 @@ function testPushManifest(
 }
 
 suite('AddPushManifest', () => {
-
   const testProjectRoot = path.resolve('test-fixtures/push-manifest-data');
 
   test('with entrypoint-only config options', (done) => {

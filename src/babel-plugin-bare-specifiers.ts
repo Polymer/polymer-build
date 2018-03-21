@@ -34,7 +34,7 @@ type HasSpecifier =
  */
 export const resolveBareSpecifiers = (
     filePath: string,
-    isComponentRequest: boolean,
+    componentRequestRelationship: string,
     componentDir?: string,
     rootDir?: string,
     ) => ({
@@ -76,8 +76,8 @@ export const resolveBareSpecifiers = (
       // If we have an import that crosses the top-level / componentDir
       // boundary, fix up the path to generate polyserve-style ../ cross-package
       // imports.
-      if (isComponentRequest && componentDir !== undefined &&
-          rootDir !== undefined &&
+      if (componentRequestRelationship !== undefined &&
+          componentDir !== undefined && rootDir !== undefined &&
           pathIsInside(resolvedSpecifier, componentDir) &&
           !pathIsInside(filePath, componentDir)) {
         const relativePathFromComponentDir =
@@ -85,7 +85,10 @@ export const resolveBareSpecifiers = (
         // Important: Create a URL pointing one level up from the root dir
         relativeSpecifierUrl = relative(
             dirname(filePath),
-            join(rootDir, '../', relativePathFromComponentDir));
+            join(
+                rootDir,
+                componentRequestRelationship,
+                relativePathFromComponentDir));
       } else {
         relativeSpecifierUrl = relative(dirname(filePath), resolvedSpecifier);
       }

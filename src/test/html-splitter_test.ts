@@ -26,7 +26,6 @@ import {HtmlSplitter} from '../html-splitter';
 const testProjectRoot = path.resolve('test-fixtures/splitter-project');
 
 suite('HtmlSplitter', () => {
-
   let defaultProject: PolymerProject;
 
   const unroot = ((p: string) => p.substring(testProjectRoot.length + 1));

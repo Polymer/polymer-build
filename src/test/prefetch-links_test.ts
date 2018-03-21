@@ -20,11 +20,8 @@ import {createLinks} from '../prefetch-links';
 import {emittedFiles} from './util';
 
 suite('prefetch-links', () => {
-
   suite('AddPrefetchLinks', () => {
-
     test('adds prefetch links for transitive deps of unbundled', async () => {
-
       const project = new PolymerProject({
         root: 'test-fixtures/bundle-project/',
         entrypoint: 'index.html',
@@ -50,7 +47,6 @@ suite('prefetch-links', () => {
     });
 
     test('add prefetch links for transitive deps of bundled', async () => {
-
       const project = new PolymerProject({
         root: 'test-fixtures/bundle-project/',
         entrypoint: 'index.html',
@@ -81,7 +77,6 @@ suite('prefetch-links', () => {
     });
 
     test('prefetch links do not include lazy dependencies', async () => {
-
       const project = new PolymerProject({
         root: 'test-fixtures/bundler-data/',
         entrypoint: 'index.html',
@@ -114,7 +109,6 @@ suite('prefetch-links', () => {
     });
 
     test('prefetch links are relative when base tag present', async () => {
-
       const project = new PolymerProject({
         root: 'test-fixtures/differential-serving/',
         entrypoint: 'index.html',

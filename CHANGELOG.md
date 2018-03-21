@@ -5,7 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-<!-- ## Unreleased -->
+## Unreleased
+* Replace `isComponentRequest` option with `componentRequestRelationship`: To rewrite an import specifier across a "component" boundry, you must now set the compnent's relationship to that boundry. Normally this will be either `../` for unscoped packages and `../../` for scoped packages.
 <!-- Add new, unreleased changes here. -->
 
 ## [2.4.1] - 2018-03-20

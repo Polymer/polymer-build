@@ -46,7 +46,6 @@ class FileTransform extends AsyncTransformStream<File, {}> {
 }
 
 suite('BuildBundler', () => {
-
   let root: string;
   let bundler: BuildBundler;
   let bundledStream: Stream;
@@ -56,7 +55,6 @@ suite('BuildBundler', () => {
       projectOptions: ProjectOptions,
       bundlerOptions?: BuildBundlerOptions,
       transform?: FileTransform) => new Promise((resolve, reject) => {
-
     assert.isDefined(projectOptions.root);
     root = projectOptions.root;
     const config = new ProjectConfig(projectOptions);
@@ -401,7 +399,6 @@ suite('BuildBundler', () => {
   });
 
   suite('options', () => {
-
     const projectOptions = {
       root: 'test-fixtures/test-project',
       entrypoint: 'index.html',
