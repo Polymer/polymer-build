@@ -15,12 +15,11 @@
 import * as path from 'path';
 import * as logging from 'plylog';
 import {Analyzer, FsUrlResolver, PackageRelativeUrl, ResolvedUrl, Severity, UrlLoader, Warning, WarningFilter, WarningPrinter} from 'polymer-analyzer';
-import {parseUrl} from 'polymer-analyzer/lib/core/utils';
 import {ProjectConfig} from 'polymer-project-config';
 import {PassThrough, Transform} from 'stream';
 import {src as vinylSrc} from 'vinyl-fs';
 
-import {LocalFsPath, urlFromPath} from './path-transformers';
+import {LocalFsPath, pathFromUrl, urlFromPath} from './path-transformers';
 import {AsyncTransformStream, VinylReaderTransform} from './streams';
 
 import File = require('vinyl');
@@ -106,10 +105,10 @@ export class BuildAnalyzer {
   started: boolean = false;
   sourceFilesLoaded: boolean = false;
 
-  private _sourcesStream: NodeJS.ReadableStream;
-  private _sourcesProcessingStream: NodeJS.ReadWriteStream;
-  private _dependenciesStream: Transform;
-  private _dependenciesProcessingStream: NodeJS.ReadWriteStream;
+  private _sourcesStream!: NodeJS.ReadableStream;
+  private _sourcesProcessingStream!: NodeJS.ReadWriteStream;
+  private _dependenciesStream!: Transform;
+  private _dependenciesProcessingStream!: NodeJS.ReadWriteStream;
   private _warningsFilter: WarningFilter;
 
   files = new Map<PackageRelativeUrl, File>();
@@ -122,7 +121,7 @@ export class BuildAnalyzer {
     fragmentToDeps: new Map(),
     fragmentToFullDeps: new Map()
   };
-  _resolveDependencyAnalysis: (index: DepsIndex) => void;
+  _resolveDependencyAnalysis!: (index: DepsIndex) => void;
 
   constructor(config: ProjectConfig) {
     this.config = config;
@@ -239,7 +238,7 @@ export class BuildAnalyzer {
     // If the file is a fragment, begin analysis on its dependencies
     if (this.config.isFragment(filePath)) {
       const deps = await this._getDependencies(this.analyzer.resolveUrl(
-          urlFromPath(this.config.root as LocalFsPath, filePath)));
+          urlFromPath(this.config.root as LocalFsPath, filePath))!);
       this._addDependencies(filePath, deps);
       this.allFragmentsToAnalyze.delete(filePath);
       // If there are no more fragments to analyze, we are done
@@ -485,12 +484,20 @@ export class StreamLoader implements UrlLoader {
 
   resolveDeferredFile(filePath: LocalFsPath, file: File): void {
     const deferredCallbacks = this.deferredFiles.get(filePath);
-    deferredCallbacks.resolve(file.contents.toString());
+    if (deferredCallbacks == null) {
+      throw new Error(
+          `Internal error: could not get deferredCallbacks for ${filePath}`);
+    }
+    deferredCallbacks.resolve(file.contents!.toString());
     this.deferredFiles.delete(filePath);
   }
 
   rejectDeferredFile(filePath: LocalFsPath, err: Error): void {
     const deferredCallbacks = this.deferredFiles.get(filePath);
+    if (deferredCallbacks == null) {
+      throw new Error(
+          `Internal error: could not get deferredCallbacks for ${filePath}`);
+    }
     deferredCallbacks.reject(err);
     this.deferredFiles.delete(filePath);
   }
@@ -506,11 +513,12 @@ export class StreamLoader implements UrlLoader {
       throw new Error('Unable to load ${url}.');
     }
 
-    const filePath = parseUrl(url).pathname as LocalFsPath;
+    const urlPath = this._buildAnalyzer.analyzer.urlResolver.relative(url);
+    const filePath = pathFromUrl(this.config.root as LocalFsPath, urlPath);
     const file = this._buildAnalyzer.getFile(filePath);
 
     if (file) {
-      return file.contents.toString();
+      return file.contents!.toString();
     }
 
     return new Promise(

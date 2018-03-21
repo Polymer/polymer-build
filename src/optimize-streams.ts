@@ -43,13 +43,16 @@ export interface OptimizeOptions {
   css?: {
     minify?: boolean|{exclude?: string[]},
   };
-  js?: {
-    minify?: boolean|{exclude?: string[]},
-    compile?: boolean|{exclude?: string[]},
-    moduleResolution?: ModuleResolutionStrategy,
-    transformEsModulesToAmd?: boolean,
-  };
+  js?: JsOptimizeOptions;
 }
+
+export interface JsOptimizeOptions {
+  minify?: boolean|{exclude?: string[]};
+  compile?: boolean|{exclude?: string[]};
+  moduleResolution?: ModuleResolutionStrategy;
+  transformEsModulesToAmd?: boolean;
+}
+
 
 /**
  * GenericOptimizeTransform is a generic optimization stream. It can be extended
@@ -100,7 +103,7 @@ export class GenericOptimizeTransform extends Transform {
  * Transform JavaScript using Babel.
  */
 export class JsTransform extends GenericOptimizeTransform {
-  constructor(options: OptimizeOptions['js']) {
+  constructor(options: JsOptimizeOptions) {
     const shouldCompileFile =
         options.compile ? notExcluded(options.compile) : () => false;
     const shouldMinifyFile =
@@ -196,7 +199,7 @@ export function getOptimizeStreams(options?: OptimizeOptions):
   }
 
   return streams;
-};
+}
 
 function matchesExt(extension: string) {
   return (fs: vinyl) => !!fs.path && fs.relative.endsWith(extension);

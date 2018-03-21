@@ -96,7 +96,7 @@ suite('PolymerProject', () => {
           urlLoader: new FsUrlLoader('test-fixtures/test-project')
         }),
         excludes: ['bower_components/loads-external-dependencies.html'].map(
-            (p) => urlResolver.resolve(p as PackageRelativeUrl)),
+            (p) => urlResolver.resolve(p as PackageRelativeUrl)!),
         inlineCss: true,
         inlineScripts: false,
         rewriteUrlsInTemplates: true,

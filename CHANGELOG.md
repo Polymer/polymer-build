@@ -5,8 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+<!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
+
+## [2.4.1] - 2018-03-20
+* Fix import specifier rewriting when importing a dependency from a top-level module.
+
+## [2.4.0] - 2018-03-19
 * Fix dependency specification for `babel-core`
 * Add `jsTransform` function, factored out of `optimize-streams` module (so that it can be shared with Polyserve).
 * Renamed `jsTransform` option from `compile` to `compileToEs5` to clarify its behavior.

@@ -48,7 +48,7 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
     // Map all files; pass-through all non-HTML files.
     for await (const file of files) {
       const fileUrl = this._analyzer.resolveUrl(urlFromPath(
-          this._config.root as LocalFsPath, file.path as LocalFsPath));
+          this._config.root as LocalFsPath, file.path as LocalFsPath))!;
       this.files.set(fileUrl, file);
       if (path.extname(file.path) !== '.html') {
         yield file;

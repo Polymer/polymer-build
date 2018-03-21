@@ -33,7 +33,7 @@ suite('prefetch-links', () => {
               .pipe(project.addPrefetchLinks()),
           project.config.root);
 
-      const html = files.get('index.html').contents.toString();
+      const html = files.get('index.html')!.contents!.toString();
 
       // No prefetch links needed for direct dependency.
       assert.notInclude(
@@ -63,7 +63,7 @@ suite('prefetch-links', () => {
           ['index.html', 'simple-import.html', 'simple-script.js'];
       assert.deepEqual(expectedFiles, [...files.keys()].sort());
 
-      const html = files.get('index.html').contents.toString();
+      const html = files.get('index.html')!.contents!.toString();
 
       // `simple-import.html` is a direct dependency, so we should not add
       // prefetch link to it.
@@ -88,7 +88,7 @@ suite('prefetch-links', () => {
               .pipe(project.addPrefetchLinks()),
           project.config.root);
 
-      const html = files.get('index.html').contents.toString();
+      const html = files.get('index.html')!.contents!.toString();
       // Shell is a direct dependency, so should not have a prefetch link.
       assert.notInclude(html, '<link rel="prefetch" href="/shell.html">');
 
@@ -122,7 +122,7 @@ suite('prefetch-links', () => {
               .pipe(project.addPrefetchLinks()),
           project.config.root);
 
-      const html = files.get('index.html').contents.toString();
+      const html = files.get('index.html')!.contents!.toString();
 
       // The `external-script.js` file is imported by `shell.html` so is
       // transitive dependency of `index.html`.  Because `index.html` has a base
@@ -139,7 +139,7 @@ suite('prefetch-links', () => {
     const deps = new Set([
       'bower_components/polymer/polymer.html',
       'src/my-icons.html',
-    ].map((u: any) => urlResolver.resolve(u)));
+    ].map((u: any) => urlResolver.resolve(u)!));
 
     test('with no base tag and absolute true', () => {
       const url = 'index.html' as PackageRelativeUrl;
@@ -149,7 +149,7 @@ suite('prefetch-links', () => {
            '<link rel="prefetch" href="/src/my-icons.html">' +
            '<body>foo</body></html>');
       const actual =
-          createLinks(urlResolver, html, urlResolver.resolve(url), deps, true)
+          createLinks(urlResolver, html, urlResolver.resolve(url)!, deps, true);
       assert.equal(actual, expected);
     });
 
@@ -161,7 +161,7 @@ suite('prefetch-links', () => {
            '<link rel="prefetch" href="src/my-icons.html">' +
            '<body>foo</body></html>');
       const actual = createLinks(
-          urlResolver, htmlWithBase, urlResolver.resolve(url), deps, true)
+          urlResolver, htmlWithBase, urlResolver.resolve(url)!, deps, true);
       assert.equal(actual, expected);
     });
   });

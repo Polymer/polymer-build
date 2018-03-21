@@ -193,7 +193,7 @@ export class AddPushManifest extends AsyncTransformStream<File, File> {
     for await (const file of files) {
       this.files.set(
           this.analyzer.resolveUrl(urlFromPath(
-              this.config.root as LocalFsPath, file.path as LocalFsPath)),
+              this.config.root as LocalFsPath, file.path as LocalFsPath))!,
           file);
       yield file;
     }
@@ -215,14 +215,14 @@ export class AddPushManifest extends AsyncTransformStream<File, File> {
     const allFragments =
         new Set((await buildDepsIndex(
                      this.config.allFragments.map(
-                         (path) => this.analyzer.resolveUrl(path)),
+                         (path) => this.analyzer.resolveUrl(path)!),
                      this.analyzer))
                     .entrypointToDeps.keys());
 
     // If an app-shell exists, use that as our main push URL because it has a
     // reliable URL. Otherwise, support the single entrypoint URL.
     const mainPushEntrypointUrl =
-        this.analyzer.resolveUrl(this.config.shell || this.config.entrypoint);
+        this.analyzer.resolveUrl(this.config.shell || this.config.entrypoint)!;
     allFragments.add(mainPushEntrypointUrl);
 
     // Generate the dependencies to push for each fragment.

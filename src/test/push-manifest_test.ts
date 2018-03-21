@@ -51,7 +51,7 @@ class CheckPushManifest extends AsyncTransformStream<File, File> {
         continue;
       }
       try {
-        const pushManifestContents = file.contents.toString();
+        const pushManifestContents = file.contents!.toString();
         const pushManifestJson = JSON.parse(pushManifestContents);
         assert.deepEqual(pushManifestJson, this.expectedManifest);
         this.emit('match-success');
@@ -113,7 +113,7 @@ suite('AddPushManifest', () => {
       },
     };
 
-    testPushManifest(project, null, null, expectedPushManifest, done);
+    testPushManifest(project, undefined, undefined, expectedPushManifest, done);
   });
 
   test('with entrypoint and fragments config options', (done) => {
@@ -164,7 +164,7 @@ suite('AddPushManifest', () => {
       'entrypoint-c.html': {},
     };
 
-    testPushManifest(project, null, null, expectedPushManifest, done);
+    testPushManifest(project, undefined, undefined, expectedPushManifest, done);
   });
 
   test('with full app-shell config options', (done) => {
@@ -216,7 +216,7 @@ suite('AddPushManifest', () => {
       'entrypoint-c.html': {}
     };
 
-    testPushManifest(project, null, null, expectedPushManifest, done);
+    testPushManifest(project, undefined, undefined, expectedPushManifest, done);
   });
 
 
@@ -272,7 +272,11 @@ suite('AddPushManifest', () => {
     };
 
     testPushManifest(
-        project, pushManifestRelativePath, null, expectedPushManifest, done);
+        project,
+        pushManifestRelativePath,
+        undefined,
+        expectedPushManifest,
+        done);
   });
 
   test('with prefix', (done) => {
@@ -311,7 +315,7 @@ suite('AddPushManifest', () => {
 
     testPushManifest(
         project,
-        null,
+        undefined,
         '/foo/' as PackageRelativeUrl,
         expectedPushManifest,
         done);

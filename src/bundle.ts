@@ -64,11 +64,12 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
     const forkedAnalyzer =
         (analyzer || buildAnalyzer.analyzer)._fork({urlLoader});
 
-    strategy = strategy ||
-        this.config.shell &&
-            generateShellMergeStrategy(forkedAnalyzer.resolveUrl(urlFromPath(
-                this.config.root as LocalFsPath,
-                this.config.shell as LocalFsPath)));
+    if (strategy === undefined && this.config.shell !== undefined) {
+      strategy =
+          generateShellMergeStrategy(forkedAnalyzer.resolveUrl(urlFromPath(
+              this.config.root as LocalFsPath,
+              this.config.shell as LocalFsPath))!);
+    }
 
     this._bundler = new Bundler({
       analyzer: forkedAnalyzer,
@@ -119,7 +120,7 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
   private async _generateBundleManifest(): Promise<BundleManifest> {
     const entrypoints = this.config.allFragments.map(
         (e) => this._bundler.analyzer.resolveUrl(
-            urlFromPath(this.config.root as LocalFsPath, e as LocalFsPath)));
+            urlFromPath(this.config.root as LocalFsPath, e as LocalFsPath))!);
     return this._bundler.generateManifest(entrypoints);
   }
 
@@ -127,9 +128,13 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
     const filesChanged = [];
     for (const [url, originalFile] of this._buildAnalyzer.files) {
       const downstreamFile =
-          this.files.get(this._buildAnalyzer.analyzer.resolveUrl(url));
-      if (downstreamFile.contents.toString() !==
-          originalFile.contents.toString()) {
+          this.files.get(this._buildAnalyzer.analyzer.resolveUrl(url)!);
+      if (downstreamFile == null) {
+        throw new Error(
+            `Internal error: could not find downstreamFile at ${url}`);
+      }
+      if (downstreamFile.contents!.toString() !==
+          originalFile.contents!.toString()) {
         filesChanged.push(url);
       }
     }
@@ -139,7 +144,7 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
   private _mapFile(file: File) {
     this.files.set(
         this._buildAnalyzer.analyzer.resolveUrl(urlFromPath(
-            this.config.root as LocalFsPath, file.path as LocalFsPath)),
+            this.config.root as LocalFsPath, file.path as LocalFsPath))!,
         file);
   }
 

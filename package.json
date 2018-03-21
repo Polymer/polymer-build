@@ -1,6 +1,6 @@
 {
   "name": "polymer-build",
-  "version": "2.3.3",
+  "version": "2.4.1",
   "description": "A library of Gulp build tasks",
   "main": "lib/polymer-build.js",
   "typings": "lib/polymer-build.d.ts",
@@ -8,9 +8,9 @@
     "lint": "gulp lint",
     "build": "gulp build",
     "test": "gulp lint test",
+    "test:watch": "tsc-then -- mocha -c",
     "prepublishOnly": "npm test",
-    "format": "find src/ -iname '*.ts' -o -iname '*.js' | xargs clang-format --style=file -i",
-    "test:watch": "watchy -w src/ -- npm test --loglevel=silent"
+    "format": "find src/ -iname '*.ts' -o -iname '*.js' | xargs clang-format --style=file -i"
   },
   "repository": {
     "type": "git",
@@ -60,6 +60,7 @@
     "multipipe": "^1.0.2",
     "mz": "^2.6.0",
     "parse5": "^2.2.3",
+    "path-is-inside": "^1.0.2",
     "plylog": "^0.5.0",
     "polymer-analyzer": "^3.0.0-pre.17",
     "polymer-bundler": "^4.0.0-pre.2",
@@ -94,10 +95,10 @@
     "sinon": "^1.17.6",
     "strip-indent": "^2.0.0",
     "temp": "^0.8.3",
+    "tsc-then": "^1.1.0",
     "tslint": "^5.2.0",
     "typescript": "^2.3.2",
     "uglify-js": "^2.8.26",
-    "vinyl-fs-fake": "^1.1.0",
-    "watchy": "^0.6.7"
+    "vinyl-fs-fake": "^1.1.0"
   }
 }

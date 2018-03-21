@@ -36,7 +36,7 @@ class NoopStream extends Writable {
     super({objectMode: true});
   }
   _write(_chunk: any, _encoding?: string, callback?: Function): void {
-    callback();
+    callback!();
   }
 }
 
@@ -65,7 +65,9 @@ suite('Analyzer', () => {
             const ftd = depsIndex.fragmentToDeps;
             for (const frag of ftd.keys()) {
               assert.deepEqual(
-                  ftd.get(frag), ['shared-1.html', 'shared-2.html']);
+                  ftd.get(frag),
+                  ['shared-1.html', 'shared-2.html'].map(
+                      (u) => u as PackageRelativeUrl));
             }
           });
     });
