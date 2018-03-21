@@ -74,7 +74,7 @@ export function urlFromPath(
   // The startsWith(root) check is important on Windows because of the case
   // where paths have different drive letters.  The startsWith('../') will
   // catch the general not-in-root case.
-  if (!target.startsWith(root) || relativePath.startsWith('../')) {
+  if (!targetPosix.startsWith(root) || relativePath.startsWith('../')) {
     throw new Error(`target path is not in root: ${target} (${root})`);
   }
 
