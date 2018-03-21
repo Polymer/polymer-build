@@ -13,6 +13,9 @@
  */
 
 import File = require('vinyl');
+import {ResolvedUrl, FileRelativeUrl} from 'polymer-analyzer';
+import URI from 'vscode-uri';
+import * as path from 'path';
 
 export function getFlowingState(stream: NodeJS.ReadableStream): boolean {
   // Cast our streams to <any> so that we can check the flowing state.
@@ -41,3 +44,24 @@ export async function emittedFiles(
               .on('end', () => resolve(files))
               .on('error', (e: Error) => reject(e)));
 }
+
+/**
+ * On posix systems file urls look like:
+ *      file:///path/to/foo
+ * On windows they look like:
+ *      file:///c%3A/path/to/foo
+ *
+ * This will produce an OS-correct file url. Pretty much only useful for testing
+ * url resolvers.
+ */
+export function rootedFileUrl(
+    strings: TemplateStringsArray, ...values: any[]): ResolvedUrl {
+  const root = URI.file(path.resolve('/')).toString();
+  const text = noOpTag(strings, ...values) as FileRelativeUrl;
+  return (root + text) as ResolvedUrl;
+}
+
+// Generates a no-op template literal tag.
+const noOpTag = (strings: TemplateStringsArray, ...values: any[]): string =>
+    values.reduce(
+        (r: string, v: any, i) => r + String(v) + strings[i + 1], strings[0]);

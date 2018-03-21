@@ -20,7 +20,7 @@ import {ProjectConfig} from 'polymer-project-config';
 
 import {BuildAnalyzer} from './analyzer';
 import {FileMapUrlLoader} from './file-map-url-loader';
-import {pathFromUrl, urlFromPath, LocalFsPath} from './path-transformers';
+import {urlFromPath, LocalFsPath, getAbsoluteFilePath} from './path-transformers';
 import {AsyncTransformStream} from './streams';
 
 export {Options} from 'polymer-bundler';
@@ -109,9 +109,7 @@ export class BuildBundler extends AsyncTransformStream<File, File> {
     // Map the bundles into the file map.
     for (const [url, document] of documents) {
       this._mapFile(new File({
-        path: pathFromUrl(
-            this.config.root as LocalFsPath,
-            this._bundler.analyzer.urlResolver.relative(url)),
+        path: getAbsoluteFilePath(this.config, url),
         contents: new Buffer(parse5.serialize(document.ast)),
       }));
     }

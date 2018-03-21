@@ -15,12 +15,12 @@
 import * as dom5 from 'dom5';
 import * as parse5 from 'parse5';
 import * as path from 'path';
-import {Analyzer, PackageRelativeUrl, ResolvedUrl, UrlResolver} from 'polymer-analyzer';
+import {Analyzer, FsUrlResolver, PackageRelativeUrl, ResolvedUrl, UrlResolver} from 'polymer-analyzer';
 import {ProjectConfig} from 'polymer-project-config';
 
 import File = require('vinyl');
 
-import {pathFromUrl, urlFromPath, LocalFsPath} from './path-transformers';
+import {urlFromPath, LocalFsPath, getAbsoluteFilePath} from './path-transformers';
 import {FileMapUrlLoader} from './file-map-url-loader';
 import {AsyncTransformStream} from './streams';
 
@@ -37,8 +37,10 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
     super({objectMode: true});
     this.files = new Map();
     this._config = config;
-    this._analyzer =
-        new Analyzer({urlLoader: new FileMapUrlLoader(this.files)});
+    this._analyzer = new Analyzer({
+      urlResolver: new FsUrlResolver(this._config.root),
+      urlLoader: new FileMapUrlLoader(this.files)
+    });
   }
 
   protected async *
@@ -108,10 +110,10 @@ export class AddPrefetchLinks extends AsyncTransformStream<File, File> {
               this._analyzer.resolveUrl(urlFromPath(
                   this._config.root as LocalFsPath,
                   this._config.entrypoint as LocalFsPath)));
-      const filePath = pathFromUrl(
-          this._config.root as LocalFsPath,
-          this._analyzer.urlResolver.relative(documentUrl));
-      yield new File({contents: new Buffer(html, 'utf-8'), path: filePath})
+      yield new File({
+        contents: new Buffer(html, 'utf-8'),
+        path: getAbsoluteFilePath(this._config, documentUrl)
+      });
     }
   }
 }
