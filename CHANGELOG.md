@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- ## Unreleased -->
 <!-- Add new, unreleased changes here. -->
 
+## [2.5.0] - 2018-03-21
+* Add `packageName` option to `jsTransform()` function. Option is required when
+  `isComponentRequest` option is true.
+
 ## [2.4.1] - 2018-03-20
 * Fix import specifier rewriting when importing a dependency from a top-level module.
 
