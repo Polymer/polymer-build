@@ -86,7 +86,12 @@ export function urlFromPath(
  * Returns a filesystem path for the url, relative to the root.
  */
 export function pathFromUrl(
-    root: LocalFsPath, url: PackageRelativeUrl): LocalFsPath {
+    root: LocalFsPath,
+    // TODO(usergenic): PackageRelativeUrl are not *necessarily* always just a
+    // relative path from root.  Maybe subclass as PackageRelativeUrlPath or
+    // something if this function doesn't disappear after
+    // https://github.com/Polymer/polymer-build/issues/324 is addressed.
+    url: PackageRelativeUrl): LocalFsPath {
   return path.normalize(decodeURI(path.posix.join(
              posixifyPath(root), path.posix.join('/', url)))) as LocalFsPath;
 }
