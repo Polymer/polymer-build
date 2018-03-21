@@ -122,7 +122,7 @@ suite('HtmlSplitter', () => {
         .pipe(htmlSplitter.rejoin())
         .on('data',
             (file: File) => {
-              const contents = file.contents.toString();
+              const contents = file.contents!.toString();
               assert.equal(contents, source);
             })
         .on('end', done)

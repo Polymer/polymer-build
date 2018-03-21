@@ -17,14 +17,15 @@
 // TODO Migrate to async tests.
 
 import {assert} from 'chai';
-import * as fs from 'fs';
+import * as fs from 'mz/fs';
 import * as path from 'path';
 import * as vfs from 'vinyl-fs';
-const temp = require('temp').track();
-const mergeStream = require('merge-stream');
 
 import {PolymerProject} from '../polymer-project';
 import * as serviceWorker from '../service-worker';
+
+const temp = require('temp').track();
+const mergeStream = require('merge-stream');
 
 suite('service-worker', () => {
   let testBuildRoot: string;
@@ -41,8 +42,8 @@ suite('service-worker', () => {
     });
 
     temp.mkdir('polymer-build-test', (err: Error, dir?: string) => {
-      if (err) {
-        return done(err);
+      if (err || dir === undefined) {
+        return done(err || 'no dir given');
       }
       testBuildRoot = dir;
       vfs.src(path.join('test-fixtures/test-project/**'))

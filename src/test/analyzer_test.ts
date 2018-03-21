@@ -35,7 +35,7 @@ class NoopStream extends Writable {
     super({objectMode: true});
   }
   _write(_chunk: any, _encoding?: string, callback?: Function): void {
-    callback();
+    callback!();
   }
 }
 
