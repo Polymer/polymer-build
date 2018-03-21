@@ -310,6 +310,7 @@ export class BuildAnalyzer {
   }
 
   getFileByUrl(url: PackageRelativeUrl): File|undefined {
+    // TODO(usergenic): url carefulness bug, take an extra careful look at this.
     if (url.startsWith('/')) {
       url = url.substring(1) as PackageRelativeUrl;
     }
@@ -504,7 +505,7 @@ export class StreamLoader implements UrlLoader {
 
   // We can't load external dependencies.
   canLoad(url: ResolvedUrl): boolean {
-    return url.startsWith('file://');
+    return url.startsWith('file:///');
   }
 
   async load(url: ResolvedUrl): Promise<string> {
