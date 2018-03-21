@@ -85,11 +85,13 @@ export interface JsTransformOptions {
   // The path of the file being transformed, used for module resolution.
   filePath?: string;
 
+  // The package name of the file being transformed, required when
+  // `isComponentRequest` is true.
+  packageName?: string;
+
   // For Polyserve or other servers with similar component directory mounting
-  // behavior. If this is a request for a package in node_modules/, set it's
-  // relationship to the node_modules/ folder. Normally this will be either
-  // '../' for unscoped packages and '../../' for scoped packages.
-  componentRequestRelationship?: string;
+  // behavior. Whether this is a request for a package in node_modules/.
+  isComponentRequest?: boolean;
 
   // The component directory to use when rewriting bare specifiers to relative
   // paths. A resolved path that begins with the component directory will be
@@ -136,7 +138,8 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
     doBabel = true;
     plugins.push(resolveBareSpecifiers(
         options.filePath,
-        options.componentRequestRelationship,
+        options.isComponentRequest,
+        options.packageName,
         options.componentDir,
         options.rootDir));
   }

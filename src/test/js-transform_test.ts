@@ -176,7 +176,8 @@ suite('jsTransform', () => {
     const result = jsTransform(input, {
       moduleResolution: 'node',
       filePath,
-      componentRequestRelationship: '../',
+      isComponentRequest: true,
+      packageName: 'some-package',
       componentDir: path.join(fixtureRoot, 'node_modules'),
       rootDir: fixtureRoot
     });
@@ -201,7 +202,8 @@ suite('jsTransform', () => {
         const result = jsTransform(input, {
           moduleResolution: 'node',
           filePath,
-          componentRequestRelationship: '../../',
+          isComponentRequest: true,
+          packageName: '@some-scope/some-package',
           componentDir: path.join(fixtureRoot, 'node_modules'),
           rootDir: fixtureRoot
         });
