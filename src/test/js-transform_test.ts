@@ -190,7 +190,7 @@ suite('jsTransform', () => {
       () => {
         const fixtureRoot =
             path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
-        const filePath = path.join(fixtureRoot, 'npm-module.js');
+        const filePath = path.join(fixtureRoot, 'npm-module.js') as LocalFsPath;
 
         const input = stripIndent(`
       import { dep1 } from 'dep1';
