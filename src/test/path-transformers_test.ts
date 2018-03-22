@@ -16,41 +16,35 @@
 
 import {assert} from 'chai';
 import {join as pathJoin, sep as pathSeparator} from 'path';
-import {PackageRelativeUrl} from 'polymer-analyzer';
-import {LocalFsPath, pathFromUrl, urlFromPath} from '../path-transformers';
+import {ProjectConfig} from 'polymer-project-config';
+
+import {getAbsoluteFilePath, LocalFsPath, urlFromPath} from '../path-transformers';
+import {rootedFileUrl} from './util';
 
 const WindowsRootPath = 'C:\\Users\\TEST_USER\\TEST_ROOT' as LocalFsPath;
 const MacRootPath = '/Users/TEST_USER/TEST_ROOT' as LocalFsPath;
 const RootPath = pathSeparator === '\\' ? WindowsRootPath : MacRootPath;
 
 suite('pathFromUrl()', () => {
+  const config = {root: RootPath} as any as ProjectConfig;
   test('creates a filesystem path using the platform separators', () => {
     const otherSeparator = pathSeparator === '/' ? '\\' : '/';
-    const path =
-        pathFromUrl(RootPath, '/some/url/pathname' as PackageRelativeUrl);
+    const path = getAbsoluteFilePath(
+        config, rootedFileUrl`Users/TEST_USER/TEST_ROOT/some/url/pathname`);
     assert.include(path, pathSeparator);
     assert.notInclude(path, otherSeparator);
   });
 
-  test('returns a path if url is absolute', () => {
-    const path = pathFromUrl(RootPath, '/absolute/path' as PackageRelativeUrl);
-    assert.equal(path, pathJoin(RootPath, 'absolute', 'path'));
-  });
-
-  test('returns a path if url relative', () => {
-    const path = pathFromUrl(RootPath, 'relative/path' as PackageRelativeUrl);
-    assert.equal(path, pathJoin(RootPath, 'relative', 'path'));
-  });
-
   test('will not go outside the root path', () => {
-    const path = pathFromUrl(
-        RootPath, '../../../still/../root/path' as PackageRelativeUrl);
-    assert.equal(path, pathJoin(RootPath, 'root', 'path'));
+    assert.throws(() => {
+      getAbsoluteFilePath(config, rootedFileUrl`some/other/directory/`);
+    });
   });
 
-  test('will unencode the URI-encoded sequences, like spaces', () => {
-    const path = pathFromUrl(RootPath, '/spaced%20out' as PackageRelativeUrl);
-    assert.equal(path, pathJoin(RootPath, 'spaced out'));
+  test('handles spaces correctly', () => {
+    const path = getAbsoluteFilePath(
+        config, rootedFileUrl`Users/TEST_USER/TEST_ROOT/hello%20world.txt`);
+    assert.equal(path, pathJoin(RootPath, 'hello world.txt'));
   });
 });
 

@@ -19,7 +19,7 @@ import {ProjectConfig} from 'polymer-project-config';
 import {PassThrough, Transform} from 'stream';
 import {src as vinylSrc} from 'vinyl-fs';
 
-import {LocalFsPath, pathFromUrl, urlFromPath} from './path-transformers';
+import {getAbsoluteFilePath, LocalFsPath, urlFromPath} from './path-transformers';
 import {AsyncTransformStream, VinylReaderTransform} from './streams';
 
 import File = require('vinyl');
@@ -523,8 +523,7 @@ export class StreamLoader implements UrlLoader {
       throw new Error('Unable to load ${url}.');
     }
 
-    const urlPath = this._buildAnalyzer.analyzer.urlResolver.relative(url);
-    const filePath = pathFromUrl(this.config.root as LocalFsPath, urlPath);
+    const filePath = getAbsoluteFilePath(this.config, url);
     const file = this._buildAnalyzer.getFile(filePath);
 
     if (file) {

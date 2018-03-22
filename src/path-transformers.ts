@@ -51,7 +51,8 @@
  */
 
 import * as path from 'path';
-import {PackageRelativeUrl} from 'polymer-analyzer';
+import {FsUrlLoader, PackageRelativeUrl, ResolvedUrl} from 'polymer-analyzer';
+import {ProjectConfig} from 'polymer-project-config';
 
 export declare class LocalFsPathBrand { private LocalFsPathBrand: never; }
 export type LocalFsPath = string&LocalFsPathBrand;
@@ -82,18 +83,15 @@ export function urlFromPath(
   return encodeURI(relativePath) as PackageRelativeUrl;
 }
 
-/**
- * Returns a filesystem path for the url, relative to the root.
- */
-export function pathFromUrl(
-    root: LocalFsPath,
-    // TODO(usergenic): PackageRelativeUrl are not *necessarily* always just a
-    // relative path from root.  Maybe subclass as PackageRelativeUrlPath or
-    // something if this function doesn't disappear after
-    // https://github.com/Polymer/polymer-build/issues/324 is addressed.
-    url: PackageRelativeUrl): LocalFsPath {
-  return path.normalize(decodeURI(path.posix.join(
-             posixifyPath(root), path.posix.join('/', url)))) as LocalFsPath;
+/** Returns an absolute file path for the given url, if possible. */
+export function getAbsoluteFilePath(
+    config: ProjectConfig, url: ResolvedUrl): LocalFsPath {
+  const resolver = new FsUrlLoader(config.root);
+  const result = resolver.getFilePath(url);
+  if (!result.successful) {
+    throw new Error(`Internal Error: could not get file path for url: ${url}`);
+  }
+  return result.value as LocalFsPath;
 }
 
 /**
