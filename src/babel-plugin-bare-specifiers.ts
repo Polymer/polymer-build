@@ -61,7 +61,14 @@ export const resolveBareSpecifiers = (
       try {
         resolvedSpecifier = resolve.sync(specifier, {
           basedir: pathlib.dirname(filePath),
-          extensions: ['.js', '.json'],
+          // It's invalid to load a .json or .node file as a module on the web,
+          // but this is what Node's resolution algorithm does
+          // (https://nodejs.org/api/modules.html#modules_all_together), so we
+          // also do it here for completeness. Without including these
+          // extensions the user will probably get a 404. With them, they'll
+          // probably get an invalid MIME type error (which is hopefully more
+          // useful).
+          extensions: ['.js', '.json', '.node'],
           // Some packages use a non-standard alternative to the "main" field
           // in their package.json to differentiate their ES module version.
           packageFilter: (
@@ -73,7 +80,18 @@ export const resolveBareSpecifiers = (
           },
         });
       } catch (e) {
+        if (!isPathSpecifier(specifier)) {
+          // Don't warn if the specifier was already a path, even though we do
+          // resolve paths, because maybe the user is serving it some other way.
+          console.warn(`Could not resolve module specifier "${specifier}"`);
+        }
         return;
+      }
+
+      if (!resolvedSpecifier.endsWith('.js')) {
+        console.warn(
+            `Module specifier "${specifier}" ` +
+            `resolved to non .js file "${resolvedSpecifier}"`);
       }
 
       let relativeSpecifierUrl: string;

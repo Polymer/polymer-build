@@ -177,11 +177,14 @@ suite('jsTransform', () => {
     test('paths that still need node resolution', () => {
       const filePath = path.join(fixtureRoot, 'foo.js') as LocalFsPath;
 
-      const input = stripIndent(`
-        import { bar } from './bar';
-        import { baz } from './baz';
-        import { qux } from './qux';
-      `);
+      const input =
+          // Resolves to a .js file.
+          `import { bar } from './bar';\n` +
+          // Resolves to a .json file (invalid for the web, but we still do it).
+          `import { baz } from './baz';\n` +
+          // Resolves to an actual extension-less file in preference to a .js
+          // file with the same basename.
+          `import { qux } from './qux';\n`;
 
       const expected = stripIndent(`
         import { bar } from './bar.js';
