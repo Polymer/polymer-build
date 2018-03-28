@@ -124,7 +124,7 @@ export class JsTransform extends GenericOptimizeTransform {
 }
 
 /**
- * Transform JavaScript.
+ * Transform HTML.
  */
 export class HtmlTransform extends GenericOptimizeTransform {
   constructor(options: OptimizeOptions) {

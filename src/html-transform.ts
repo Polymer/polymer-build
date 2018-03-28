@@ -315,6 +315,8 @@ function getMinifiedRequireJs() {
  *
  * Note that the given document must have been parsed with `locationInfo: true`,
  * or else this function will always remove these tags.
+ *
+ * TODO(aomarks) Move to dom5.
  */
 function removeFakeNodes(document: dom5.Node) {
   const suspects = [];

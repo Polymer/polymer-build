@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
-* Build ("optimize") stream will now transform ES modules to AMD.
+* ES to AMD module transformation is now supported by `getOptimizeStreams` and `htmlTransform`. Additionally:
+  * Will now inject an inline minified RequireJS AMD loader, and the Babel helpers.
+  * Phantom `<html>`, `<head>`, and `<body>` tags injected by parse5 are now removed.
+
 <!-- Add new, unreleased changes here. -->
 
 ## [3.0.0-pre.3] - 2018-03-18
