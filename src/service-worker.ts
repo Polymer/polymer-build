@@ -14,15 +14,13 @@
 
 /// <reference path="../custom_typings/sw-precache.d.ts" />
 
-import {writeFile} from 'fs';
+import { writeFile } from 'fs';
 import * as path from 'path';
 import * as logging from 'plylog';
-import {generate as swPrecacheGenerate, SWConfig} from 'sw-precache';
-
-import {DepsIndex} from './analyzer';
-import {LocalFsPath, posixifyPath, PosixPath} from './path-transformers';
-import {PolymerProject} from './polymer-project';
-
+import { generateSWString, getModuleUrl, WorkboxConfig } from 'workbox-build';
+import { DepsIndex } from './analyzer';
+import { PolymerProject } from './polymer-project';
+import { LocalFsPath, posixifyPath, PosixPath } from './path-transformers';
 const logger = logging.getLogger('polymer-build.service-worker');
 
 export interface AddServiceWorkerOptions {
@@ -30,7 +28,7 @@ export interface AddServiceWorkerOptions {
   buildRoot: LocalFsPath;
   bundled?: boolean;
   path?: LocalFsPath;
-  swPrecacheConfig?: SWConfig|null;
+  workboxConfig?: WorkboxConfig | null;
   basePath?: LocalFsPath;
 }
 
@@ -39,16 +37,6 @@ export interface AddServiceWorkerOptions {
  * options. When one is found, warn the user and fix if possible.
  */
 function fixDeprecatedOptions(options: any): AddServiceWorkerOptions {
-  if (typeof options.serviceWorkerPath !== 'undefined') {
-    logger.warn(
-        '"serviceWorkerPath" config option has been renamed to "path" and will no longer be supported in future versions');
-    options.path = options.path || options.serviceWorkerPath;
-  }
-  if (typeof options.swConfig !== 'undefined') {
-    logger.warn(
-        '"swConfig" config option has been renamed to "swPrecacheConfig" and will no longer be supported in future versions');
-    options.swPrecacheConfig = options.swPrecacheConfig || options.swConfig;
-  }
   return options;
 }
 
@@ -57,7 +45,7 @@ function fixDeprecatedOptions(options: any): AddServiceWorkerOptions {
  * the information provided in the DepsIndex object.
  */
 function getPrecachedAssets(
-    depsIndex: DepsIndex, project: PolymerProject): string[] {
+  depsIndex: DepsIndex, project: PolymerProject): string[] {
   const precachedAssets = new Set<string>(project.config.allFragments);
   precachedAssets.add(project.config.entrypoint);
 
@@ -89,7 +77,7 @@ export const hasNoFileExtension = /\/[^\/\.]*(\?|$)/;
  * configuration.
  */
 export async function generateServiceWorkerConfig(
-    options: AddServiceWorkerOptions): Promise<SWConfig> {
+  options: AddServiceWorkerOptions): Promise<WorkboxConfig> {
   console.assert(!!options, '`project` & `buildRoot` options are required');
   console.assert(!!options.project, '`project` option is required');
   console.assert(!!options.buildRoot, '`buildRoot` option is required');
@@ -98,78 +86,48 @@ export async function generateServiceWorkerConfig(
   options = Object.assign({}, options);
   const project = options.project;
   const buildRoot = options.buildRoot;
-  const swPrecacheConfig: SWConfig =
-      Object.assign({}, options.swPrecacheConfig);
+  const workboxConfig: WorkboxConfig =
+    Object.assign({}, {
+      globDirectory: buildRoot,
+      navigateFallback: path.relative(project.config.root, project.config.entrypoint),
+    }, options.workboxConfig);
 
   const depsIndex = await project.analyzer.analyzeDependencies;
-  let staticFileGlobs = Array.from(swPrecacheConfig.staticFileGlobs || []);
+  let staticFileGlobs = Array.from(workboxConfig.globPatterns || []);
   const precachedAssets = (options.bundled) ?
-      getBundledPrecachedAssets(project) :
-      getPrecachedAssets(depsIndex, project);
+    getBundledPrecachedAssets(project) :
+    getPrecachedAssets(depsIndex, project);
 
   staticFileGlobs = staticFileGlobs.concat(precachedAssets);
   staticFileGlobs = staticFileGlobs.map((filePath: string) => {
     if (filePath.startsWith(project.config.root)) {
       filePath = filePath.substring(project.config.root.length);
     }
-    return path.join(buildRoot, filePath);
+    return removeLeadingSlash(filePath);
   });
 
-  if (swPrecacheConfig.navigateFallback === undefined) {
-    // Map all application routes to the entrypoint.
-    swPrecacheConfig.navigateFallback =
-        path.relative(project.config.root, project.config.entrypoint);
-  }
+  // Add the workbox cdn scripts
+  workboxConfig.importScripts = workboxConfig.importScripts || [];
+  workboxConfig.importScripts.unshift(getModuleUrl('workbox-sw'));
 
-  if (swPrecacheConfig.navigateFallbackWhitelist === undefined) {
+  if (workboxConfig.navigateFallbackWhitelist === undefined) {
     // Don't fall back to the entrypoint if the URL looks like a static file.
     // We want those to 404 instead, since they are probably missing assets,
     // not application routes. Note it's important that this matches the
     // behavior of prpl-server.
-    swPrecacheConfig.navigateFallbackWhitelist = [hasNoFileExtension];
+    workboxConfig.navigateFallbackWhitelist = [hasNoFileExtension];
   }
-
-  if (swPrecacheConfig.directoryIndex === undefined) {
-    // By default, sw-precache maps any path ending with "/" to "index.html".
-    // This is a reasonable default for matching application routes, but 1) our
-    // entrypoint might not be called "index.html", and 2) this case is already
-    // handled by the navigateFallback configuration above. Simplest to just
-    // disable this feature.
-    swPrecacheConfig.directoryIndex = '';
-  }
-
-  // swPrecache will determine the right urls by stripping buildRoot.
-  // NOTE:(usergenic) sw-precache generate() apparently replaces the
-  // prefix on an already posixified version of the path on win32.
-  //
-  // We include a trailing slash in `stripPrefix` so that we remove leading
-  // slashes on the pre-cache asset URLs, hence producing relative URLs
-  // instead of absolute. We want relative URLs for builds mounted at non-root
-  // paths. Note that service worker fetches are relative to its own URL.
-  swPrecacheConfig.stripPrefix = addTrailingSlash(posixifyPath(buildRoot));
 
   if (options.basePath) {
-    // TODO Drop this feature once CLI doesn't depend on it.
-    let replacePrefix = posixifyPath(options.basePath);
-    if (!replacePrefix.endsWith('/')) {
-      replacePrefix = replacePrefix + '/' as PosixPath;
-    }
-    if (swPrecacheConfig.replacePrefix) {
-      console.info(
-          `Replacing service worker configuration's ` +
-          `replacePrefix option (${swPrecacheConfig.replacePrefix}) ` +
-          `with the build configuration's basePath (${replacePrefix}).`);
-    }
-    swPrecacheConfig.replacePrefix = replacePrefix;
+    workboxConfig.modifyUrlPrefix = Object.assign({}, workboxConfig.modifyUrlPrefix, {
+      '': addTrailingSlash(posixifyPath(options.basePath))
+    });
   }
 
   // static files will be pre-cached
-  swPrecacheConfig.staticFileGlobs = staticFileGlobs;
+  workboxConfig.globPatterns = staticFileGlobs;
 
-  // Log service-worker helpful output at the debug log level
-  swPrecacheConfig.logger = swPrecacheConfig.logger || logger.debug;
-
-  return swPrecacheConfig;
+  return workboxConfig;
 }
 
 /**
@@ -177,18 +135,14 @@ export async function generateServiceWorkerConfig(
  * contents), based off of the options provided.
  */
 export async function generateServiceWorker(options: AddServiceWorkerOptions):
-    Promise<Buffer> {
-  const swPrecacheConfig = await generateServiceWorkerConfig(options);
-  return await<Promise<Buffer>>(new Promise((resolve, reject) => {
-    logger.debug(`writing service worker...`, swPrecacheConfig);
-    swPrecacheGenerate(
-        swPrecacheConfig, (err?: Error, fileContents?: string) => {
-          if (err || fileContents == null) {
-            reject(err || 'No file contents provided.');
-          } else {
-            resolve(new Buffer(fileContents));
-          }
-        });
+  Promise<Buffer> {
+  const workboxConfig = await generateServiceWorkerConfig(options);
+  return await <Promise<Buffer>>(new Promise((resolve) => {
+    logger.debug(`writing service worker...`, workboxConfig);
+    generateSWString(workboxConfig).then(({ swString, warnings }) => {
+      resolve(new Buffer(swString));
+      warnings.forEach(warning => console.warn(warning));
+    });
   }));
 }
 
@@ -198,12 +152,12 @@ export async function generateServiceWorker(options: AddServiceWorkerOptions):
  * generate a service worker, which it then writes to the file system based on
  * the buildRoot & path (if provided) options.
  */
-export function addServiceWorker(options: AddServiceWorkerOptions):
-    Promise<void> {
+export async function addServiceWorker(options: AddServiceWorkerOptions):
+  Promise<void> {
   return generateServiceWorker(options).then((fileContents: Buffer) => {
     return new Promise<void>((resolve, reject) => {
       const serviceWorkerPath =
-          path.join(options.buildRoot, options.path || 'service-worker.js');
+        path.join(options.buildRoot, options.path || 'service-worker.js');
       writeFile(serviceWorkerPath, fileContents, (err) => {
         if (err) {
           reject(err);
@@ -213,6 +167,10 @@ export function addServiceWorker(options: AddServiceWorkerOptions):
       });
     });
   });
+}
+
+function removeLeadingSlash(s: string): string {
+  return s.startsWith('/') ? s.substring(1) : s;
 }
 
 function addTrailingSlash(s: string): string {

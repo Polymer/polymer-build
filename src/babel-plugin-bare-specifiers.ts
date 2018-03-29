@@ -12,31 +12,31 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {NodePath} from 'babel-traverse';
-import {ExportAllDeclaration, ExportNamedDeclaration, ImportDeclaration} from 'babel-types';
-import {resolve} from 'polymer-analyzer/lib/javascript/resolve-specifier-node';
+import { NodePath } from 'babel-traverse';
+import { ExportAllDeclaration, ExportNamedDeclaration, ImportDeclaration } from 'babel-types';
+import { resolve } from 'polymer-analyzer/lib/javascript/resolve-specifier-node';
 
 const exportExtensions = require('babel-plugin-syntax-export-extensions');
 
 const isPathSpecifier = (s: string) => /^\.{0,2}\//.test(s);
 
 type HasSpecifier =
-    ImportDeclaration|ExportNamedDeclaration|ExportAllDeclaration;
+  ImportDeclaration | ExportNamedDeclaration | ExportAllDeclaration;
 
 /**
  * Rewrites so-called "bare module specifiers" to be web-compatible paths.
  */
 export const resolveBareSpecifiers = (
-    filePath: string,
-    isComponentRequest: boolean,
-    packageName?: string,
-    componentDir?: string,
-    rootDir?: string,
-    ) => ({
+  filePath: string,
+  isComponentRequest: boolean,
+  packageName?: string,
+  componentDir?: string,
+  rootDir?: string,
+) => ({
   inherits: exportExtensions,
   visitor: {
     'ImportDeclaration|ExportNamedDeclaration|ExportAllDeclaration'(
-        path: NodePath<HasSpecifier>) {
+      path: NodePath<HasSpecifier>) {
       const node = path.node;
 
       // An export without a 'from' clause
