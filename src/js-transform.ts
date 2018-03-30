@@ -17,6 +17,7 @@ import {ModuleResolutionStrategy} from 'polymer-project-config';
 import * as uuid from 'uuid/v1';
 
 import {resolveBareSpecifiers} from './babel-plugin-bare-specifiers';
+import {rewriteImportMeta} from './babel-plugin-import-meta';
 
 // TODO(aomarks) Switch to babel-preset-env. But how do we get just syntax
 // plugins without turning on transformation, for the case where we are
@@ -97,6 +98,9 @@ export interface JsTransformOptions {
   // The root directory of the package containing the component directory.
   rootDir?: string;
 
+  // A base URL to prepend to file paths to rewrite `import.meta` expressions.
+  importMetaBase?: string;
+
   // Whether to replace ES modules with AMD modules.
   transformEsModulesToAmd?: boolean;
 
@@ -150,6 +154,17 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
         options.packageName,
         options.componentDir,
         options.rootDir));
+  }
+  if (options.importMetaBase) {
+    if (!options.filePath) {
+      throw new Error(
+          'Cannot perform node module resolution without filePath.');
+    }
+    if (!options.rootDir) {
+      throw new Error('Cannot perform node module resolution without rootDir.');
+    }
+    plugins.push(rewriteImportMeta(
+        options.filePath, options.rootDir, options.importMetaBase));
   }
   if (options.transformEsModulesToAmd) {
     doBabel = true;
