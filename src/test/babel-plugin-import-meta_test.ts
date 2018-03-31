@@ -27,7 +27,7 @@ suite('babel-plugin-import-meta', () => {
 
     const expected = stripIndent(`
       console.log({
-        url: new URL("bar.js", document.baseURI)
+        url: new URL("bar.js", document.baseURI).toString()
       });
     `);
     const plugin = rewriteImportMeta('/foo/bar.js', '/foo');
@@ -42,7 +42,7 @@ suite('babel-plugin-import-meta', () => {
 
     const expected = stripIndent(`
       console.log({
-        url: new URL("bar.js", 'http://foo.com/')
+        url: new URL("bar.js", 'http://foo.com/').toString()
       });
     `);
     const plugin = rewriteImportMeta('/foo/bar.js', '/foo', 'http://foo.com/');
