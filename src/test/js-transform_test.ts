@@ -284,7 +284,7 @@ suite('jsTransform', () => {
   test('transforms import.meta', () => {
     const rootDir =
         path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
-    const filePath = path.join(rootDir, 'npm-module.js');
+    const filePath = path.join(rootDir, 'dir/npm-module.js');
 
     const input = stripIndent(`
       console.log(import.meta);
@@ -292,7 +292,7 @@ suite('jsTransform', () => {
 
     const expected = stripIndent(`
       console.log({
-        url: new URL("npm-module.js", document.baseURI).toString()
+        url: new URL("dir/npm-module.js", document.baseURI).toString()
       });
     `);
 
