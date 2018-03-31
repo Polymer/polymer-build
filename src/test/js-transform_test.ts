@@ -146,7 +146,7 @@ suite('jsTransform', () => {
         path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
 
     test('node packages', () => {
-      const filePath = path.join(fixtureRoot, 'foo.js') as LocalFsPath;
+      const filePath = path.join(fixtureRoot, 'foo.js');
 
       const input = stripIndent(`
         import { dep1 } from 'dep1';
@@ -169,7 +169,7 @@ suite('jsTransform', () => {
     });
 
     test('regular paths and urls', () => {
-      const filePath = path.join(fixtureRoot, 'foo.js') as LocalFsPath;
+      const filePath = path.join(fixtureRoot, 'foo.js');
 
       const input = stripIndent(`
         import { p1 } from '/already/a/path.js';
@@ -192,7 +192,7 @@ suite('jsTransform', () => {
     });
 
     test('paths that still need node resolution', () => {
-      const filePath = path.join(fixtureRoot, 'foo.js') as LocalFsPath;
+      const filePath = path.join(fixtureRoot, 'foo.js');
 
       const input =
           // Resolves to a .js file.
@@ -214,7 +214,7 @@ suite('jsTransform', () => {
     });
 
     test('paths for dependencies', () => {
-      const filePath = path.join(fixtureRoot, 'npm-module.js') as LocalFsPath;
+      const filePath = path.join(fixtureRoot, 'npm-module.js');
 
       const input = stripIndent(`
         import { dep1 } from 'dep1';
@@ -236,7 +236,7 @@ suite('jsTransform', () => {
     });
 
     test('dependencies from a scoped package', () => {
-      const filePath = path.join(fixtureRoot, 'npm-module.js') as LocalFsPath;
+      const filePath = path.join(fixtureRoot, 'npm-module.js');
 
       const input = stripIndent(`
         import { dep1 } from 'dep1';
@@ -284,7 +284,7 @@ suite('jsTransform', () => {
   test('transforms import.meta', () => {
     const rootDir =
         path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
-    const filePath = path.join(rootDir, 'npm-module.js') as LocalFsPath;
+    const filePath = path.join(rootDir, 'npm-module.js');
 
     const input = stripIndent(`
       console.log(import.meta);

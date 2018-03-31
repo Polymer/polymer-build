@@ -27,10 +27,10 @@ suite('babel-plugin-import-meta', () => {
 
     const expected = stripIndent(`
       console.log({
-        url: new URL("bar.js", document.baseURI).toString()
+        url: new URL("./bar.js", document.baseURI).toString()
       });
     `);
-    const plugin = rewriteImportMeta('/foo/bar.js', '/foo');
+    const plugin = rewriteImportMeta('./bar.js');
     const result = babelCore.transform(input, {plugins: [plugin]}).code;
     assert.equal(result.trim(), expected.trim());
   });
@@ -42,10 +42,10 @@ suite('babel-plugin-import-meta', () => {
 
     const expected = stripIndent(`
       console.log({
-        url: new URL("bar.js", 'http://foo.com/').toString()
+        url: new URL("./bar.js", 'http://foo.com/').toString()
       });
     `);
-    const plugin = rewriteImportMeta('/foo/bar.js', '/foo', 'http://foo.com/');
+    const plugin = rewriteImportMeta('./bar.js', 'http://foo.com/');
     const result = babelCore.transform(input, {plugins: [plugin]}).code;
     assert.equal(result.trim(), expected.trim());
   });
@@ -58,7 +58,7 @@ suite('babel-plugin-import-meta', () => {
     const expected = stripIndent(`
       console.log(foo.import.meta);
     `);
-    const plugin = rewriteImportMeta('/foo/bar.js', '/foo');
+    const plugin = rewriteImportMeta('./bar.js');
     const result = babelCore.transform(input, {plugins: [plugin]}).code;
     assert.equal(result.trim(), expected.trim());
   });

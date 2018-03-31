@@ -30,15 +30,11 @@ const ast = template.ast;
  * [1]: https://github.com/tc39/proposal-import-meta
  * [2]: https://html.spec.whatwg.org/#hostgetimportmetaproperties
  *
- * @param filePath THe path of the file being transformed
- * @param rootDir The root project folder containing filePath
+ * @param relativeUrl The URL path of the file being transformed relative to the
+ *   baseURI of the document loading the modules.
  * @param base A base URL to use instead of document.baseURI
  */
-export const rewriteImportMeta = (
-    filePath: string,
-    rootDir: string,
-    base?: string,
-    ) => {
+export const rewriteImportMeta = (relativeURL: string, base?: string) => {
   return {
     inherits: importMetaSyntax,
     visitor: {
@@ -46,10 +42,9 @@ export const rewriteImportMeta = (
         const node = path.node;
         if (node.meta && node.meta.name === 'import' &&
             node.property.name === 'meta') {
-          const relativePath = relative(rootDir, filePath);
           const baseURI = base !== undefined ? `'${base}'` : 'document.baseURI';
           path.replaceWith(
-              ast`({url: new URL('${relativePath}', ${baseURI}).toString()})`);
+              ast`({url: new URL('${relativeURL}', ${baseURI}).toString()})`);
         }
       }
     }

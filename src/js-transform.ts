@@ -13,6 +13,7 @@
  */
 
 import * as babelCore from '@babel/core';
+import {relative} from 'path';
 import {ModuleResolutionStrategy} from 'polymer-project-config';
 import * as uuid from 'uuid/v1';
 
@@ -163,7 +164,9 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
       throw new Error('Cannot perform importMeta transform without rootDir.');
     }
     doBabel = true;
-    plugins.push(rewriteImportMeta(options.filePath, options.rootDir));
+    // TODO: Do the right thing on windows
+    const relativeURL = relative(options.rootDir, options.filePath);
+    plugins.push(rewriteImportMeta(relativeURL));
   }
   if (options.transformEsModulesToAmd) {
     doBabel = true;
