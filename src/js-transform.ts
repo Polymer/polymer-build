@@ -20,6 +20,8 @@ import * as uuid from 'uuid/v1';
 import {resolveBareSpecifiers} from './babel-plugin-bare-specifiers';
 import {rewriteImportMeta} from './babel-plugin-import-meta';
 
+import isWindows = require('is-windows');
+
 // TODO(aomarks) Switch to babel-preset-env. But how do we get just syntax
 // plugins without turning on transformation, for the case where we are
 // minifying but not compiling?
@@ -164,8 +166,11 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
       throw new Error('Cannot perform importMeta transform without rootDir.');
     }
     doBabel = true;
-    // TODO: Do the right thing on windows
-    const relativeURL = relative(options.rootDir, options.filePath);
+    let relativeURL = relative(options.rootDir, options.filePath);
+    if (isWindows()) {
+      // normalize path separators to URL format
+      relativeURL = relativeURL.replace(/\\/g, '/');
+    }
     plugins.push(rewriteImportMeta(relativeURL));
   }
   if (options.transformEsModulesToAmd) {

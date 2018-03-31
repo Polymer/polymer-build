@@ -284,6 +284,7 @@ suite('jsTransform', () => {
   test('transforms import.meta', () => {
     const rootDir =
         path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
+    // Important: keep a path seperator here to test Windows:
     const filePath = path.join(rootDir, 'dir/npm-module.js');
 
     const input = stripIndent(`
