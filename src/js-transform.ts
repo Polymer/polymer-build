@@ -98,8 +98,8 @@ export interface JsTransformOptions {
   // The root directory of the package containing the component directory.
   rootDir?: string;
 
-  // A base URL to prepend to file paths to rewrite `import.meta` expressions.
-  importMetaBase?: string;
+  // Whether to rewrite `import.meta` expressions to objects with inline URLs.
+  transformImportMeta?: boolean;
 
   // Whether to replace ES modules with AMD modules.
   transformEsModulesToAmd?: boolean;
@@ -155,16 +155,15 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
         options.componentDir,
         options.rootDir));
   }
-  if (options.importMetaBase) {
+  if (options.transformImportMeta) {
     if (!options.filePath) {
-      throw new Error(
-          'Cannot perform node module resolution without filePath.');
+      throw new Error('Cannot perform importMeta transform without filePath.');
     }
     if (!options.rootDir) {
-      throw new Error('Cannot perform node module resolution without rootDir.');
+      throw new Error('Cannot perform importMeta transform without rootDir.');
     }
-    plugins.push(rewriteImportMeta(
-        options.filePath, options.rootDir, options.importMetaBase));
+    doBabel = true;
+    plugins.push(rewriteImportMeta(options.filePath, options.rootDir));
   }
   if (options.transformEsModulesToAmd) {
     doBabel = true;

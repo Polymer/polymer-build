@@ -21,14 +21,14 @@ import {relative} from 'path';
 const ast = template.ast;
 
 /**
- * Rewrites `import.meta` into an object with a `url` property.
+ * Rewrites `import.meta`[1] into an object with a `url`[2] property.
  *
  * `import.meta.url` must be a URL string with the fully qualified URL of the
  * module. We use the document's base URI and the relative path from rootDir to
  * filePath to build the URL.
  *
- * TODO: Add a option for a path fragment between the document base and module
- * file path.
+ * [1]: https://github.com/tc39/proposal-import-meta
+ * [2]: https://html.spec.whatwg.org/#hostgetimportmetaproperties
  *
  * @param filePath THe path of the file being transformed
  * @param rootDir The root project folder containing filePath
@@ -38,21 +38,20 @@ export const rewriteImportMeta = (
     filePath: string,
     rootDir: string,
     base?: string,
-    ) => ({
-  inherits: importMetaSyntax,
-  manipulateOptions(_opts: any, parserOpts: any) {
-    parserOpts.plugins.push('importMeta');
-  },
-  visitor: {
-    MetaProperty(path: NodePath<MetaProperty>) {
-      const node = path.node;
-      if (node.meta && node.meta.name === 'import' &&
-          node.property.name === 'meta') {
-        const relativePath = relative(rootDir, filePath);
-        const baseURI = base !== undefined ? `'${base}'` : 'document.baseURI';
-        path.replaceWith(
-            ast`({url: new URL('${relativePath}', ${baseURI}).toString()})`);
+    ) => {
+  return {
+    inherits: importMetaSyntax,
+    visitor: {
+      MetaProperty(path: NodePath<MetaProperty>) {
+        const node = path.node;
+        if (node.meta && node.meta.name === 'import' &&
+            node.property.name === 'meta') {
+          const relativePath = relative(rootDir, filePath);
+          const baseURI = base !== undefined ? `'${base}'` : 'document.baseURI';
+          path.replaceWith(
+              ast`({url: new URL('${relativePath}', ${baseURI}).toString()})`);
+        }
       }
     }
-  }
-});
+  };
+};

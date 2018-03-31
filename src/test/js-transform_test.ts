@@ -280,4 +280,28 @@ suite('jsTransform', () => {
     const result = jsTransform(input, {transformEsModulesToAmd: true});
     assert.equal(result.trim(), expected.trim());
   });
+
+  test('transforms import.meta', () => {
+    const rootDir =
+        path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
+    const filePath = path.join(rootDir, 'npm-module.js') as LocalFsPath;
+
+    const input = stripIndent(`
+      console.log(import.meta);
+    `);
+
+    const expected = stripIndent(`
+      console.log({
+        url: new URL("npm-module.js", document.baseURI).toString()
+      });
+    `);
+
+    const result = jsTransform(input, {
+      filePath,
+      rootDir,
+      transformImportMeta: true,
+    });
+    assert.equal(result.trim(), expected.trim());
+  });
+
 });
