@@ -13,18 +13,54 @@
  */
 
 import * as babelCore from '@babel/core';
-// import {assert} from 'chai';
-// import * as path from 'path';
-// import stripIndent = require('strip-indent');
+import stripIndent = require('strip-indent');
+import {assert} from 'chai';
 
 import {rewriteImportMeta} from '../babel-plugin-import-meta';
 
-suite.only('babel-plugin-import-meta', () => {
+suite('babel-plugin-import-meta', () => {
 
   test('transforms import.meta', () => {
+    const input = stripIndent(`
+      console.log(import.meta);
+    `);
+
+    const expected = stripIndent(`
+      console.log({
+        url: new URL("bar.js", document.baseURI)
+      });
+    `);
+    const plugin = rewriteImportMeta('/foo/bar.js', '/foo');
+    const result = babelCore.transform(input, {plugins: [plugin]}).code;
+    assert.equal(result.trim(), expected.trim());
+  });
+
+  test('transforms import.meta with specified base', () => {
+    const input = stripIndent(`
+      console.log(import.meta);
+    `);
+
+    const expected = stripIndent(`
+      console.log({
+        url: new URL("bar.js", 'http://foo.com/')
+      });
+    `);
     const plugin = rewriteImportMeta('/foo/bar.js', '/foo', 'http://foo.com/');
-    const out = babelCore.transform('import.meta', {plugins: [plugin]}).code;
-    console.log(out);
+    const result = babelCore.transform(input, {plugins: [plugin]}).code;
+    assert.equal(result.trim(), expected.trim());
+  });
+
+  test('does not transform non-meta property', () => {
+    const input = stripIndent(`
+      console.log(foo.import.meta);
+    `);
+
+    const expected = stripIndent(`
+      console.log(foo.import.meta);
+    `);
+    const plugin = rewriteImportMeta('/foo/bar.js', '/foo');
+    const result = babelCore.transform(input, {plugins: [plugin]}).code;
+    assert.equal(result.trim(), expected.trim());
   });
 
 });

@@ -4,6 +4,8 @@ declare module '@babel/core';
 
 declare module '@babel/plugin-syntax-import-meta';
 
+declare module '@babel/template';
+
 declare module '@babel/traverse' {
   import * as t from 'babel-types';
   export type Node = t.Node;

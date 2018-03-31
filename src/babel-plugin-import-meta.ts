@@ -13,19 +13,31 @@
  */
 
 import importMetaSyntax from '@babel/plugin-syntax-import-meta';
+import template from '@babel/template';
 import {NodePath} from '@babel/traverse';
-import * as t from '@babel/types';
 import {MetaProperty} from '@babel/types';
 import {relative} from 'path';
-import {URL} from 'whatwg-url';
+
+const ast = template.ast;
 
 /**
  * Rewrites `import.meta` into an object with a `url` property.
+ *
+ * `import.meta.url` must be a URL string with the fully qualified URL of the
+ * module. We use the document's base URI and the relative path from rootDir to
+ * filePath to build the URL.
+ *
+ * TODO: Add a option for a path fragment between the document base and module
+ * file path.
+ *
+ * @param filePath THe path of the file being transformed
+ * @param rootDir The root project folder containing filePath
+ * @param base A base URL to use instead of document.baseURI
  */
 export const rewriteImportMeta = (
     filePath: string,
     rootDir: string,
-    base: string,
+    base?: string,
     ) => ({
   inherits: importMetaSyntax,
   manipulateOptions(_opts: any, parserOpts: any) {
@@ -36,12 +48,10 @@ export const rewriteImportMeta = (
       const node = path.node;
       if (node.meta && node.meta.name === 'import' &&
           node.property.name === 'meta') {
-        // console.log('import.meta at', node.loc);
         const relativePath = relative(rootDir, filePath);
-        const url = new URL(relativePath, base);
+        const baseURI = base !== undefined ? `'${base}'` : 'document.baseURI';
         path.replaceWith(
-            t.objectExpression([t.objectProperty(
-                t.identifier('url'), t.stringLiteral(url.toString()))]) as any);
+            ast`({url: new URL('${relativePath}', ${baseURI}).toString()})`);
       }
     }
   }
