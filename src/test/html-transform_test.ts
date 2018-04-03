@@ -44,6 +44,9 @@ function replaceGiantScripts(html: string): string {
 }
 
 suite('htmlTransform', () => {
+  const fixtureRoot =
+      path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
+
   test('minifies html', () => {
     const input = `
       <html>
@@ -110,8 +113,6 @@ suite('htmlTransform', () => {
   });
 
   test('rewrites bare module specifiers to paths', () => {
-    const fixtureRoot =
-        path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
     const filePath = path.join(fixtureRoot, 'foo.html');
 
     const input = `
@@ -177,7 +178,14 @@ suite('htmlTransform', () => {
         </body></html>`;
 
       assertEqualIgnoringWhitespace(
-          htmlTransform(input, {js: {transformModulesToAmd: true}}), expected);
+          htmlTransform(input, {
+            js: {
+              transformModulesToAmd: true,
+              filePath: path.join(fixtureRoot, 'foo.html'),
+              rootDir: fixtureRoot,
+            },
+          }),
+          expected);
     });
 
     test('chains inline and external module scripts', () => {
@@ -199,14 +207,17 @@ suite('htmlTransform', () => {
       </body></html>`;
 
       assertEqualIgnoringWhitespace(
-          htmlTransform(input, {js: {transformModulesToAmd: true}}), expected);
+          htmlTransform(input, {
+            js: {
+              transformModulesToAmd: true,
+              filePath: path.join(fixtureRoot, 'foo.html'),
+              rootDir: fixtureRoot,
+            }
+          }),
+          expected);
     });
 
     test('resolves names and does AMD transform', () => {
-      const fixtureRoot =
-          path.join(__dirname, '..', '..', 'test-fixtures', 'npm-modules');
-      const filePath = path.join(fixtureRoot, 'foo.html');
-
       const input = `
         <html><head></head><body>
           <script type="module">import { dep1 } from 'dep1';</script>
@@ -223,7 +234,8 @@ suite('htmlTransform', () => {
             js: {
               transformModulesToAmd: true,
               moduleResolution: 'node',
-              filePath,
+              filePath: path.join(fixtureRoot, 'foo.html'),
+              rootDir: fixtureRoot,
             }
           }),
           expected);

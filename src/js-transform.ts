@@ -110,7 +110,8 @@ export interface JsTransformOptions {
   // Whether to rewrite `import.meta` expressions to objects with inline URLs.
   transformImportMeta?: boolean;
 
-  // Whether to replace ES modules with AMD modules.
+  // Whether to replace ES modules with AMD modules. Implies
+  // `transformImportMeta`.
   transformModulesToAmd?: boolean;
 
   // If transformModulesToAmd is true, setting this option will update the
@@ -182,6 +183,10 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
     plugins.push(rewriteImportMeta(relativeURL));
   }
   if (options.transformModulesToAmd) {
+    if (options.transformImportMeta === false) {
+      throw new Error(
+          'Cannot use transformModulesToAmd without transformImportMeta.');
+    }
     doBabel = true;
     plugins.push(...babelTransformModulesAmd);
   }

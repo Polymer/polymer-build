@@ -44,6 +44,7 @@ export interface OptimizeOptions {
   };
   js?: JsOptimizeOptions;
   entrypointPath?: string;
+  rootDir?: string;
 }
 
 export interface JsOptimizeOptions {
@@ -103,20 +104,23 @@ export class GenericOptimizeTransform extends Transform {
  * Transform JavaScript.
  */
 export class JsTransform extends GenericOptimizeTransform {
-  constructor(options: JsOptimizeOptions) {
+  constructor(options: OptimizeOptions) {
+    const jsOptions = options.js || {};
+
     const shouldCompileFile =
-        options.compile ? notExcluded(options.compile) : () => false;
+        jsOptions.compile ? notExcluded(jsOptions.compile) : () => false;
     const shouldMinifyFile =
-        options.minify ? notExcluded(options.minify) : () => false;
+        jsOptions.minify ? notExcluded(jsOptions.minify) : () => false;
 
     const transformer = (content: string, file: File) => {
       return jsTransform(content, {
         compileToEs5: shouldCompileFile(file),
         minify: shouldMinifyFile(file),
-        moduleResolution: options.moduleResolution,
+        moduleResolution: jsOptions.moduleResolution,
         filePath: file.path,
-        transformModulesToAmd: options.transformModulesToAmd,
-        transformImportMeta: options.transformImportMeta,
+        rootDir: options.rootDir,
+        transformModulesToAmd: jsOptions.transformModulesToAmd,
+        transformImportMeta: jsOptions.transformImportMeta,
         moduleScriptIdx: file.moduleScriptIdx,
       });
     };
@@ -201,7 +205,7 @@ export function getOptimizeStreams(options?: OptimizeOptions):
   options = options || {};
   const streams = [];
 
-  streams.push(gulpif(matchesExt('.js'), new JsTransform(options.js || {})));
+  streams.push(gulpif(matchesExt('.js'), new JsTransform(options)));
   streams.push(gulpif(matchesExt('.html'), new HtmlTransform(options)));
 
   if (options.css && options.css.minify) {
