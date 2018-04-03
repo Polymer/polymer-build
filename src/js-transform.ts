@@ -83,6 +83,7 @@ export interface JsTransformOptions {
   moduleResolution?: ModuleResolutionStrategy;
 
   // The path of the file being transformed, used for module resolution.
+  // Must be an absolute filesystem path.
   filePath?: string;
 
   // The package name of the file being transformed, required when
@@ -99,6 +100,7 @@ export interface JsTransformOptions {
   componentDir?: string;
 
   // The root directory of the package containing the component directory.
+  // Must be an absolute filesystem path.
   rootDir?: string;
 
   // Whether to rewrite `import.meta` expressions to objects with inline URLs.
