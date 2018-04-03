@@ -164,7 +164,9 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
         options.componentDir,
         options.rootDir));
   }
-  if (options.transformImportMeta) {
+  if (options.transformImportMeta === true ||
+      (options.transformImportMeta === undefined &&
+       options.transformModulesToAmd === true)) {
     if (!options.filePath) {
       throw new Error('Cannot perform importMeta transform without filePath.');
     }

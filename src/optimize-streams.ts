@@ -51,6 +51,7 @@ export interface JsOptimizeOptions {
   compile?: boolean|{exclude?: string[]};
   moduleResolution?: ModuleResolutionStrategy;
   transformModulesToAmd?: boolean;
+  transformImportMeta?: boolean;
 }
 
 /**
@@ -115,6 +116,7 @@ export class JsTransform extends GenericOptimizeTransform {
         moduleResolution: options.moduleResolution,
         filePath: file.path,
         transformModulesToAmd: options.transformModulesToAmd,
+        transformImportMeta: options.transformImportMeta,
         moduleScriptIdx: file.moduleScriptIdx,
       });
     };
@@ -143,6 +145,7 @@ export class HtmlTransform extends GenericOptimizeTransform {
       return htmlTransform(content, {
         js: {
           transformModulesToAmd,
+          transformImportMeta: options.js && options.js.transformImportMeta,
           // Note we don't do any other JS transforms here (like compilation),
           // because we're assuming that HtmlSplitter has run and any inline
           // scripts will be compiled in their own stream.
