@@ -111,9 +111,9 @@ export interface JsTransformOptions {
   transformImportMeta?: boolean;
 
   // Whether to replace ES modules with AMD modules.
-  transformEsModulesToAmd?: boolean;
+  transformModulesToAmd?: boolean;
 
-  // If transformEsModulesToAmd is true, setting this option will update the
+  // If transformModulesToAmd is true, setting this option will update the
   // generated AMD module to be 1) defined with an auto-generated name (instead
   // of with no name), and 2) if > 0, to depend on the previously auto-generated
   // module. This can be used to generate a dependency chain between module
@@ -179,7 +179,7 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
     }
     plugins.push(rewriteImportMeta(relativeURL));
   }
-  if (options.transformEsModulesToAmd) {
+  if (options.transformModulesToAmd) {
     doBabel = true;
     plugins.push(...babelTransformModulesAmd);
   }
@@ -200,8 +200,7 @@ export function jsTransform(js: string, options: JsTransformOptions): string {
     }
   }
 
-  if (options.transformEsModulesToAmd &&
-      options.moduleScriptIdx !== undefined) {
+  if (options.transformModulesToAmd && options.moduleScriptIdx !== undefined) {
     const generatedModule = generateModuleName(options.moduleScriptIdx);
     const previousGeneratedModule = options.moduleScriptIdx === 0 ?
         undefined :

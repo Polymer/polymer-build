@@ -149,7 +149,7 @@ suite('htmlTransform', () => {
       assertEqualIgnoringWhitespace(
           htmlTransform(input, {
             js: {
-              transformEsModulesToAmd: true,
+              transformModulesToAmd: true,
             }
           }),
           expected);
@@ -177,8 +177,7 @@ suite('htmlTransform', () => {
         </body></html>`;
 
       assertEqualIgnoringWhitespace(
-          htmlTransform(input, {js: {transformEsModulesToAmd: true}}),
-          expected);
+          htmlTransform(input, {js: {transformModulesToAmd: true}}), expected);
     });
 
     test('chains inline and external module scripts', () => {
@@ -200,8 +199,7 @@ suite('htmlTransform', () => {
       </body></html>`;
 
       assertEqualIgnoringWhitespace(
-          htmlTransform(input, {js: {transformEsModulesToAmd: true}}),
-          expected);
+          htmlTransform(input, {js: {transformModulesToAmd: true}}), expected);
     });
 
     test('resolves names and does AMD transform', () => {
@@ -223,7 +221,7 @@ suite('htmlTransform', () => {
       assertEqualIgnoringWhitespace(
           htmlTransform(input, {
             js: {
-              transformEsModulesToAmd: true,
+              transformModulesToAmd: true,
               moduleResolution: 'node',
               filePath,
             }
@@ -246,7 +244,7 @@ suite('htmlTransform', () => {
           htmlTransform(input, {
             js: {
               compileToEs5: true,
-              transformEsModulesToAmd: true,
+              transformModulesToAmd: true,
             }
           }),
           expected);
@@ -266,7 +264,7 @@ suite('htmlTransform', () => {
         </body></html>`;
 
       assertEqualIgnoringWhitespace(
-          htmlTransform(input, {js: {transformEsModulesToAmd: true}}), input);
+          htmlTransform(input, {js: {transformModulesToAmd: true}}), input);
     });
 
     test('adds AMD loader to entry point before first module', () => {
@@ -291,7 +289,7 @@ suite('htmlTransform', () => {
       const result = htmlTransform(input, {
         injectAmdLoader: true,
         js: {
-          transformEsModulesToAmd: true,
+          transformModulesToAmd: true,
         },
       });
       assertEqualIgnoringWhitespace(replaceGiantScripts(result), expected);
@@ -307,7 +305,7 @@ suite('htmlTransform', () => {
       const result = htmlTransform(input, {
         injectAmdLoader: true,
         js: {
-          transformEsModulesToAmd: true,
+          transformModulesToAmd: true,
         },
       });
       assertEqualIgnoringWhitespace(result, input);
@@ -339,7 +337,7 @@ suite('htmlTransform', () => {
       const result = htmlTransform(input, {
         injectAmdLoader: true,
         js: {
-          transformEsModulesToAmd: true,
+          transformModulesToAmd: true,
         },
       });
       assertEqualIgnoringWhitespace(replaceGiantScripts(result), expected);

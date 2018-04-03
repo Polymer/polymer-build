@@ -168,7 +168,7 @@ suite('optimize-streams', () => {
 
       const opts = {
         js: {
-          transformEsModulesToAmd: true,
+          transformModulesToAmd: true,
         },
       };
 

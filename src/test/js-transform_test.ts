@@ -276,7 +276,7 @@ suite('jsTransform', () => {
       });
     `);
 
-    const result = jsTransform(input, {transformEsModulesToAmd: true});
+    const result = jsTransform(input, {transformModulesToAmd: true});
     assert.equal(result.trim(), expected.trim());
   });
 
@@ -310,7 +310,7 @@ suite('jsTransform', () => {
       export const foo = 'foo';
       console.log(import('./bar.js'));
     `);
-    const result = jsTransform(input, {transformEsModulesToAmd: true});
+    const result = jsTransform(input, {transformModulesToAmd: true});
 
     assert.include(
         result,
@@ -319,5 +319,4 @@ suite('jsTransform', () => {
         result,
         `console.log(new Promise((res, rej) => _require(['./bar.js'], res, rej)));`);
   });
-
 });

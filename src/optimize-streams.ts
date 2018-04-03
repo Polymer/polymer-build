@@ -50,7 +50,7 @@ export interface JsOptimizeOptions {
   minify?: boolean|{exclude?: string[]};
   compile?: boolean|{exclude?: string[]};
   moduleResolution?: ModuleResolutionStrategy;
-  transformEsModulesToAmd?: boolean;
+  transformModulesToAmd?: boolean;
 }
 
 /**
@@ -114,7 +114,7 @@ export class JsTransform extends GenericOptimizeTransform {
         minify: shouldMinifyFile(file),
         moduleResolution: options.moduleResolution,
         filePath: file.path,
-        transformEsModulesToAmd: options.transformEsModulesToAmd,
+        transformModulesToAmd: options.transformModulesToAmd,
         moduleScriptIdx: file.moduleScriptIdx,
       });
     };
@@ -135,21 +135,21 @@ export class HtmlTransform extends GenericOptimizeTransform {
         () => false;
 
     const transformer = (content: string, file: File) => {
-      const transformEsModulesToAmd =
-          options.js && options.js.transformEsModulesToAmd;
+      const transformModulesToAmd =
+          options.js && options.js.transformModulesToAmd;
       const isEntryPoint =
           !!options.entrypointPath && file.path === options.entrypointPath;
 
       return htmlTransform(content, {
         js: {
-          transformEsModulesToAmd,
+          transformModulesToAmd,
           // Note we don't do any other JS transforms here (like compilation),
           // because we're assuming that HtmlSplitter has run and any inline
           // scripts will be compiled in their own stream.
         },
         minifyHtml: shouldMinifyFile(file),
         injectBabelHelpers: isEntryPoint && anyJsCompiledToEs5,
-        injectAmdLoader: isEntryPoint && transformEsModulesToAmd,
+        injectAmdLoader: isEntryPoint && transformModulesToAmd,
       });
     };
     super('html-transform', transformer);
