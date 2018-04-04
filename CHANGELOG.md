@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-<!-- ## Unreleased -->
-<!-- Add new, unreleased changes here. -->
+## Unreleased
 * Fix bug where not all percent-encoded characters in URIs would be decoded (in particular, `%40` -> `@` which is important for scoped NPM packages).
+<!-- Add new, unreleased changes here. -->
 
 ## [3.0.0-pre.7] - 2018-04-03
 * [breaking] Rename `jsTransform` and `getOptimizeStreams` option from `transformEsModuleToAmd` to `transformModuleToAmd`.
